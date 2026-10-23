@@ -1,0 +1,4 @@
+{
+  "blocked_stage": "server_minor_guard",
+  "note": "Heuristic minor signal triggers MINOR_SIGNAL before Gemini"
+}

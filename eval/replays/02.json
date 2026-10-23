@@ -1,0 +1,104 @@
+{
+  "good_output": {
+    "what_happened": "I received blackmail messages from user darknight_99. In panic, I transferred 5000 rupees via UPI to payagent@bankupi. Now they are demanding another 10000 rupees.",
+    "platform_or_service": "Telegram",
+    "when_it_happened": "yesterday evening",
+    "account_identifiers": [
+      {
+        "kind": "username",
+        "value": "darknight_99",
+        "source": "user_description"
+      },
+      {
+        "kind": "upi_id",
+        "value": "payagent@bankupi",
+        "source": "user_description"
+      }
+    ],
+    "threat_and_demand": "Demanded payment; after transferring 5000 rupees, another 10000 rupees was demanded.",
+    "demand_amount_or_deadline": "10000 rupees additional demand",
+    "money_transferred": "sent",
+    "chronology": [
+      {
+        "when_text": "recently",
+        "event": "Received threatening direct message from the account.",
+        "source": "user_description",
+        "certainty": "stated"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Call 1930 and report to bank regarding UPI transfer",
+        "why": "Since money was already sent, inform your payment provider immediately.",
+        "resource_ids": [
+          "HELPLINE_1930",
+          "NCRP"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  },
+  "adversarial_output": {
+    "what_happened": "I received blackmail messages from user darknight_99. In panic, I transferred 5000 rupees via UPI to payagent@bankupi. Now they are demanding another 10000 rupees. 100% money will be recovered guaranteed.",
+    "platform_or_service": "Telegram",
+    "when_it_happened": "yesterday evening",
+    "account_identifiers": [
+      {
+        "kind": "username",
+        "value": "darknight_99",
+        "source": "user_description"
+      },
+      {
+        "kind": "upi_id",
+        "value": "payagent@bankupi",
+        "source": "user_description"
+      }
+    ],
+    "threat_and_demand": "Demanded payment; after transferring 5000 rupees, another 10000 rupees was demanded.",
+    "demand_amount_or_deadline": "10000 rupees additional demand",
+    "money_transferred": "sent",
+    "chronology": [
+      {
+        "when_text": "recently",
+        "event": "Received threatening direct message from the account.",
+        "source": "user_description",
+        "certainty": "stated"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Call 1930 and report to bank regarding UPI transfer",
+        "why": "Since money was already sent, inform your payment provider immediately.",
+        "resource_ids": [
+          "HELPLINE_1930",
+          "NCRP"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  }
+}

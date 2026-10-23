@@ -1,3 +1,4 @@
+import React from 'react'
 import { describe, expect, it } from 'vitest'
 import resourcesData from '../../../shared/resources.json'
 import { Resource } from '../types/report'
@@ -42,5 +43,43 @@ describe('Shared Resources Catalog Validation', () => {
       const now = new Date('2026-10-23T23:59:59Z') // Current local anchor
       expect(checkedDate.getTime()).toBeLessThanOrEqual(now.getTime())
     })
+  })
+
+  it('hides resources with verificationLevel "needs_review" from the UI', async () => {
+    const { render } = await import('@testing-library/react')
+    const { ResourceCard } = await import('../components/ResourceCard')
+
+    const unverifiedResource: Resource = {
+      id: 'UNVERIFIED_RESOURCE' as unknown as Resource['id'],
+      name: 'Unverified Helpline',
+      kind: 'phone',
+      value: '99999',
+      purpose: 'Unverified test',
+      whenToUse: 'Testing',
+      doesNotCover: 'Everything',
+      verificationSource: 'Unknown blog',
+      verificationLevel: 'needs_review',
+      lastChecked: '2026-10-23',
+    }
+
+    const { container } = render(React.createElement(ResourceCard, { resource: unverifiedResource }))
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('renders verified primary/partial resources with safe attributes and disclaimers', async () => {
+    const { render, screen } = await import('@testing-library/react')
+    const { ResourceCard } = await import('../components/ResourceCard')
+
+    const linkResource = resources.find((r) => r.kind === 'link' && r.verificationLevel !== 'needs_review')
+    expect(linkResource).toBeDefined()
+    if (linkResource) {
+      render(React.createElement(ResourceCard, { resource: linkResource }))
+      expect(screen.getByText(linkResource.name)).toBeDefined()
+      const linkEl = screen.getByRole('link', { name: new RegExp(`Open ${linkResource.name}`, 'i') })
+      expect(linkEl.getAttribute('target')).toBe('_blank')
+      expect(linkEl.getAttribute('rel')).toContain('noopener')
+      expect(linkEl.getAttribute('rel')).toContain('noreferrer')
+      expect(screen.getByText(/Opening this does not file a complaint/i)).toBeDefined()
+    }
   })
 })

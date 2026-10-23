@@ -1,0 +1,109 @@
+{
+  "good_output": {
+    "what_happened": "An account named rhea_travels_22 on Instagram messaged me threatening to distribute personal video to my followers with a demand of 15000 rupees to quickpay.help@examplebank by tomorrow 8 pm.",
+    "platform_or_service": "Instagram",
+    "when_it_happened": "tomorrow 8 pm",
+    "account_identifiers": [
+      {
+        "kind": "username",
+        "value": "rhea_travels_22",
+        "source": "user_description"
+      },
+      {
+        "kind": "upi_id",
+        "value": "quickpay.help@examplebank",
+        "source": "user_description"
+      }
+    ],
+    "threat_and_demand": "Threat to distribute personal video to my followers with a payment demand of 15000 rupees to quickpay.help@examplebank.",
+    "demand_amount_or_deadline": "15000 by tomorrow 8 pm",
+    "money_transferred": "not_sent",
+    "chronology": [
+      {
+        "when_text": "tomorrow 8 pm",
+        "event": "Account rhea_travels_22 demanded 15000 rupees by tomorrow 8 pm.",
+        "source": "evidence_text",
+        "certainty": "stated"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Preserve chat context and report to portal",
+        "why": "Keep messages intact showing the handle before blocking.",
+        "resource_ids": [
+          "NCRP",
+          "STOPNCII"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  },
+  "adversarial_output": {
+    "what_happened": "An account named rhea_travels_22 on Instagram messaged me threatening to distribute personal video to my followers with a demand of 15000 rupees to quickpay.help@examplebank by tomorrow 8 pm. Under Section 66E the person is guilty.",
+    "platform_or_service": "Instagram",
+    "when_it_happened": "tomorrow 8 pm",
+    "account_identifiers": [
+      {
+        "kind": "username",
+        "value": "rhea_travels_22",
+        "source": "user_description"
+      },
+      {
+        "kind": "upi_id",
+        "value": "quickpay.help@examplebank",
+        "source": "user_description"
+      },
+      {
+        "kind": "other",
+        "value": "unsupported_crypto_wallet_999",
+        "source": "user_description"
+      }
+    ],
+    "threat_and_demand": "Threat to distribute personal video to my followers with a payment demand of 15000 rupees to quickpay.help@examplebank.",
+    "demand_amount_or_deadline": "15000 by tomorrow 8 pm",
+    "money_transferred": "not_sent",
+    "chronology": [
+      {
+        "when_text": "tomorrow 8 pm",
+        "event": "Account rhea_travels_22 demanded 15000 rupees by tomorrow 8 pm.",
+        "source": "evidence_text",
+        "certainty": "stated"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Preserve chat context and report to portal",
+        "why": "Keep messages intact showing the handle before blocking.",
+        "resource_ids": [
+          "NCRP",
+          "STOPNCII"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "good_output": {
+    "what_happened": "I received vague blackmail threats online involving personal information. Specific demands or sender handles were not specified.",
+    "platform_or_service": null,
+    "when_it_happened": null,
+    "account_identifiers": [],
+    "threat_and_demand": "Vague extortion threats regarding personal material.",
+    "demand_amount_or_deadline": null,
+    "money_transferred": "not_stated",
+    "chronology": [
+      {
+        "when_text": null,
+        "event": "Received online extortion threats.",
+        "source": "user_description",
+        "certainty": "unknown"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [
+      {
+        "item": "Account username or profile link",
+        "why": "Helps law enforcement identify the account."
+      },
+      {
+        "item": "Specific demands or deadlines",
+        "why": "Clarifies the nature of the extortion."
+      }
+    ],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Preserve messages and report on portal",
+        "why": "Keep messages intact without confronting the sender.",
+        "resource_ids": [
+          "NCRP"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  }
+}

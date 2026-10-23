@@ -1,0 +1,42 @@
+{
+  "good_output": {
+    "what_happened": "The person who messaged me stated they are standing outside my building and threatening immediate physical entry.",
+    "platform_or_service": "SMS",
+    "when_it_happened": "now",
+    "account_identifiers": [],
+    "threat_and_demand": "Immediate physical threat outside my residence.",
+    "demand_amount_or_deadline": null,
+    "money_transferred": "not_sent",
+    "chronology": [
+      {
+        "when_text": "recently",
+        "event": "Received threatening direct message from the account.",
+        "source": "user_description",
+        "certainty": "stated"
+      }
+    ],
+    "supporting_material_user_has": [
+      "Direct message transcript"
+    ],
+    "missing_information": [],
+    "evidence_checklist": [
+      {
+        "item": "Threatening direct messages",
+        "how_to_preserve": "Keep chat history intact and capture clear text records showing timestamps."
+      }
+    ],
+    "action_suggestions": [
+      {
+        "title": "Move to a safe place and contact 112 emergency response",
+        "why": "For physical threats and danger, contact emergency services immediately.",
+        "resource_ids": [
+          "ERSS_112",
+          "NCRP"
+        ]
+      }
+    ],
+    "limitations": [
+      "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
+    ]
+  }
+}

@@ -6,6 +6,25 @@ interface ResourceCardProps {
 }
 
 export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
+  // Section 8: hide resources with verificationLevel 'needs_review' from the UI
+  if (resource.verificationLevel === 'needs_review') {
+    return null
+  }
+
+  const formatCheckedDate = (dateStr: string) => {
+    try {
+      const [year, month, day] = dateStr.split('-')
+      if (year && month && day) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const mIdx = parseInt(month, 10) - 1
+        return `${parseInt(day, 10)} ${months[mIdx] || month} ${year}`
+      }
+    } catch {
+      // fallback
+    }
+    return dateStr
+  }
+
   return (
     <div className="resource-card" style={{
       border: '1px solid var(--color-border)',
@@ -64,7 +83,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
 
         <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>
           {resource.kind === 'link' ? 'Opens in a new tab. Opening this does not file a complaint. ' : ''}
-          Last checked 23 Oct 2026
+          Last checked {formatCheckedDate(resource.lastChecked)}
         </div>
       </div>
     </div>
