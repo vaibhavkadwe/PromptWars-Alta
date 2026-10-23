@@ -2,7 +2,7 @@
 
 import re
 
-from backend.app.schemas import IncidentDetails, SafetyFlags
+from backend.app.schemas import SafetyFlags
 
 # Regex patterns for physical violence threats and location-based threats
 PHYSICAL_DANGER_PATTERNS = [
@@ -34,11 +34,11 @@ SELF_HARM_PATTERNS = [
     r"\bend it all\b",
 ]
 
-# Regex patterns for minor indicators
+# Heuristic regex patterns for minor indicators (server-side minor guard backstop)
 MINOR_PATTERNS = [
     r"\b(i am|i'm|im|age is|aged?)\s+(1[0-7]|[7-9])\b",
     r"\b(minor|under 18|underage)\b",
-    r"\b(school student|in school|high school)\b",
+    r"\b(school student|in school|high school|my school)\b",
     r"\b(class\s+([6-9]|1[0-2])|grade\s+([6-9]|1[0-2]))\b",
     r"\b1[0-7]\s*(years old|yrs old|y/o|yo)\b",
 ]
@@ -48,41 +48,28 @@ _SELF_HARM_REGEX = re.compile("|".join(SELF_HARM_PATTERNS), re.IGNORECASE)
 _MINOR_REGEX = re.compile("|".join(MINOR_PATTERNS), re.IGNORECASE)
 
 
+def check_minor_signal(description: str, evidence_text: str | None = None) -> bool:
+    """
+    Conservative heuristic backstop over description and evidence.
+    Returns True if minor signals are detected.
+    """
+    corpus = description + " " + (evidence_text or "")
+    return bool(_MINOR_REGEX.search(corpus))
+
+
 def screen_safety(
     description: str,
     evidence_text: str | None = None,
-    details: IncidentDetails | None = None,
 ) -> SafetyFlags:
     """
-    Run deterministic regex screen over description + evidence + details.
-    This works independently of Gemini and is always computed.
+    Run deterministic regex screen over description and evidence.
+    Works independently of Gemini and is always computed.
     """
     corpus = description + " " + (evidence_text or "")
-    if details:
-        if details.incident_when:
-            corpus += " " + details.incident_when
-        if details.platform:
-            corpus += " " + details.platform
-
-    # Physical danger
-    phys_flag = False
-    if details and details.feels_physically_unsafe is True:
-        phys_flag = True
-    elif _PHYSICAL_REGEX.search(corpus):
-        phys_flag = True
-
-    # Self-harm
+    phys_flag = bool(_PHYSICAL_REGEX.search(corpus))
     self_harm_flag = bool(_SELF_HARM_REGEX.search(corpus))
-
-    # Minor
-    minor_flag = False
-    if details and details.may_be_under_18 is True:
-        minor_flag = True
-    elif _MINOR_REGEX.search(corpus):
-        minor_flag = True
 
     return SafetyFlags(
         physical_danger=phys_flag,
         self_harm=self_harm_flag,
-        possible_minor=minor_flag,
     )

@@ -5,7 +5,7 @@ import logging
 from typing import Protocol
 
 from backend.app.config import get_settings
-from backend.app.schemas import IncidentReport
+from backend.app.schemas import ComplaintDraft
 from google import genai
 from google.genai import types
 
@@ -38,11 +38,11 @@ class GeminiClient:
         if not self._client or not self.api_key:
             raise RuntimeError("GEMINI_API_KEY is not configured.")
 
-        # Configure structured output with IncidentReport schema
+        # Configure structured output with ComplaintDraft schema
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             response_mime_type="application/json",
-            response_schema=IncidentReport,
+            response_schema=ComplaintDraft,
             temperature=0.2,
             max_output_tokens=8192,
         )

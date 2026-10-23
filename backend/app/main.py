@@ -17,14 +17,11 @@ from backend.app.gemini_client import GeminiClient
 from backend.app.logging_config import log_analysis_event, setup_logging
 from backend.app.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from backend.app.ratelimit import limiter
-from backend.app.resources import get_all_resources, select_resources
 from backend.app.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
+    ComplaintDraft,
     HealthResponse,
-    IncidentDetails,
-    IncidentReport,
-    Resource,
     SafetyFlags,
 )
 from fastapi import FastAPI, Request
@@ -46,7 +43,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="SafeSignal API",
-        version="0.1.0",
+        version="0.2.0",
         docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=openapi_url,
@@ -65,20 +62,24 @@ def create_app() -> FastAPI:
         req_id = getattr(request.state, "request_id", str(uuid4()))
         errors = exc.errors()
 
-        # Check if consent is the missing or invalid field
+        # Check if consent or adult confirmation is the error
+        is_adult_err = any("adult_confirmed" in err.get("loc", ()) for err in errors)
         is_consent_err = any("consent_ai_processing" in err.get("loc", ()) for err in errors)
-        code = "CONSENT_REQUIRED" if is_consent_err else "VALIDATION_ERROR"
 
-        # Build clean message NEVER echoing sensitive 'input' values
-        clean_msgs = []
-        for err in errors:
-            loc = " -> ".join([str(x) for x in err.get("loc", ()) if x != "body"])
-            msg = err.get("msg", "Invalid value")
-            clean_msgs.append(f"{loc}: {msg}" if loc else msg)
-
-        friendly_msg = "; ".join(clean_msgs) if clean_msgs else "Invalid request data provided."
-        if is_consent_err:
+        if is_adult_err:
+            code = "ADULT_NOT_CONFIRMED"
+            friendly_msg = "You must confirm you are 18 or older to use the optional AI drafting tool."
+        elif is_consent_err:
+            code = "CONSENT_REQUIRED"
             friendly_msg = "Explicit consent for AI processing is required to analyze your report."
+        else:
+            code = "VALIDATION_ERROR"
+            clean_msgs = []
+            for err in errors:
+                loc = " -> ".join([str(x) for x in err.get("loc", ()) if x != "body"])
+                msg = err.get("msg", "Invalid value")
+                clean_msgs.append(f"{loc}: {msg}" if loc else msg)
+            friendly_msg = "; ".join(clean_msgs) if clean_msgs else "Invalid request data provided."
 
         log_analysis_event(
             request_id=req_id,
@@ -137,10 +138,6 @@ def create_app() -> FastAPI:
             paid_tier=app_settings.GEMINI_PAID_TIER,
         )
 
-    @app.get("/api/resources", response_model=list[Resource])
-    async def list_resources():
-        return get_all_resources()
-
     @app.get("/api/sample", response_model=AnalyzeResponse)
     async def get_sample_report(request: Request):
         req_id = getattr(request.state, "request_id", str(uuid4()))
@@ -148,33 +145,43 @@ def create_app() -> FastAPI:
         with open(fixture_path, encoding="utf-8") as f:
             sample_data = json.load(f)
 
-        report = IncidentReport.model_validate(sample_data)
-        safety = SafetyFlags(
-            physical_danger=report.risk.physical_danger_mentioned,
-            self_harm=report.risk.self_harm_mentioned,
-            possible_minor=report.risk.possible_minor,
-        )
-        resources = select_resources(
-            details=IncidentDetails(),
-            safety=safety,
-            report=report,
-        )
-
+        draft = ComplaintDraft.model_validate(sample_data)
         return AnalyzeResponse(
             request_id=req_id,
             source="sample",
             model=None,
             paid_tier=get_settings().GEMINI_PAID_TIER,
             generated_at=datetime.now(UTC).isoformat(),
-            report=report,
-            safety=safety,
-            resources=resources,
+            draft=draft,
+            safety=SafetyFlags(physical_danger=False, self_harm=False),
+            notices=[],
+            resource_ids=["NCRP"],
         )
 
     @app.post("/api/analyze", response_model=AnalyzeResponse)
     async def analyze_incident(payload: AnalyzeRequest, request: Request):
         req_id = getattr(request.state, "request_id", str(uuid4()))
         start_time = time.perf_counter()
+
+        # Enforce adult confirmation
+        if not payload.adult_confirmed:
+            log_analysis_event(
+                request_id=req_id,
+                route=request.url.path,
+                status_code=422,
+                latency_ms=0.0,
+                error_class="ADULT_NOT_CONFIRMED",
+            )
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "error": {
+                        "code": "ADULT_NOT_CONFIRMED",
+                        "message": "You must confirm you are 18 or older to use AI drafting.",
+                        "request_id": req_id,
+                    }
+                },
+            )
 
         # Enforce consent
         if not payload.consent_ai_processing:
@@ -211,7 +218,6 @@ def create_app() -> FastAPI:
         # Check AI configuration
         app_settings = get_settings()
         if not app_settings.is_ai_configured and not hasattr(app.state.gemini_client, "response_text"):
-            # Real client requested but no key provided
             log_analysis_event(
                 request_id=req_id,
                 route=request.url.path,
@@ -250,7 +256,6 @@ def create_app() -> FastAPI:
             raise
 
     # ------------------ Static Files Mount (Production) ------------------
-    # In production, serve frontend/dist at "/" mounted AFTER API routes
     dist_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
     if dist_path.exists() and dist_path.is_dir():
         app.mount("/", StaticFiles(directory=str(dist_path), html=True), name="frontend-dist")

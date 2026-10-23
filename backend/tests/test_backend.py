@@ -8,38 +8,34 @@ import pytest
 from backend.app.config import get_settings
 from backend.app.gemini_client import FakeGeminiClient
 from backend.app.main import create_app
-from backend.app.resources import STATIC_RESOURCE_CATALOG
-from backend.app.schemas import IncidentReport
+from backend.app.schemas import ComplaintDraft
 from httpx import ASGITransport, AsyncClient
 
 VALID_PAYLOAD = {
     "description": "I met someone named rhea_travels_22 on an app and they are threatening to leak my video unless I pay 15000.",
     "evidence_text": "Payment requested to quickpay.help@examplebank by tomorrow 8 pm.",
-    "details": {
-        "incident_when": "yesterday",
-        "platform": "dating app",
-        "threat_types": ["THREAT_TO_SHARE_IMAGES", "MONEY_DEMAND"],
-        "money_demanded": True,
-        "more_images_demanded": False,
-        "immediate_disclosure_threat": True,
-        "feels_physically_unsafe": False,
-        "may_be_under_18": False,
-    },
+    "platform": "dating app",
+    "incident_when": "yesterday",
+    "money_status": "not_sent",
+    "adult_confirmed": True,
     "consent_ai_processing": True,
 }
 
 
 @pytest.mark.asyncio
 async def test_valid_description_returns_valid_response(client):
-    """1. Valid description -> valid AnalyzeResponse."""
+    """1. Valid description -> valid AnalyzeResponse with draft."""
     resp = await client.post("/api/analyze", json=VALID_PAYLOAD)
     assert resp.status_code == 200
     data = resp.json()
     assert data["source"] == "gemini"
-    assert "report" in data
+    assert "draft" in data
     assert "safety" in data
-    assert "resources" in data
-    assert len(data["report"]["actions"]) >= 4
+    assert "resource_ids" in data
+    draft = data["draft"]
+    assert draft["what_happened"]
+    assert len(draft["evidence_checklist"]) > 0
+    assert len(draft["action_suggestions"]) > 0
 
 
 @pytest.mark.asyncio
@@ -48,7 +44,11 @@ async def test_empty_or_too_short_input_returns_422_without_echoing_input(client
     sensitive_short_text = "secret"  # 6 chars < 10 chars
     resp = await client.post(
         "/api/analyze",
-        json={"description": sensitive_short_text, "consent_ai_processing": True},
+        json={
+            "description": sensitive_short_text,
+            "adult_confirmed": True,
+            "consent_ai_processing": True,
+        },
     )
     assert resp.status_code == 422
     data = resp.json()
@@ -58,15 +58,14 @@ async def test_empty_or_too_short_input_returns_422_without_echoing_input(client
 
 
 @pytest.mark.asyncio
-async def test_missing_optional_fields_ok(client):
-    """3. Missing optional fields (evidence, details) -> OK."""
-    minimal_payload = {
-        "description": "Someone is threatening to share my private photos unless I pay them.",
-        "consent_ai_processing": True,
-    }
-    resp = await client.post("/api/analyze", json=minimal_payload)
-    assert resp.status_code == 200
-    assert resp.json()["source"] == "gemini"
+async def test_adult_not_confirmed_returns_422(client):
+    """3. adult_confirmed false -> 422 with code ADULT_NOT_CONFIRMED."""
+    no_adult_payload = dict(VALID_PAYLOAD)
+    no_adult_payload["adult_confirmed"] = False
+    resp = await client.post("/api/analyze", json=no_adult_payload)
+    assert resp.status_code == 422
+    data = resp.json()
+    assert data["error"]["code"] == "ADULT_NOT_CONFIRMED"
 
 
 @pytest.mark.asyncio
@@ -81,8 +80,29 @@ async def test_consent_false_returns_422_consent_required(client):
 
 
 @pytest.mark.asyncio
+async def test_minor_signal_returns_422_without_gemini():
+    """5. Minor signals in description -> 422 MINOR_SIGNAL without calling Gemini."""
+    app = create_app()
+    fake_client = FakeGeminiClient(response_text="{}")
+    app.state.gemini_client = fake_client
+
+    minor_payload = dict(VALID_PAYLOAD)
+    minor_payload["description"] = "I am 15 years old school student in class 10 and someone is threatening me."
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        resp = await c.post("/api/analyze", json=minor_payload)
+        assert resp.status_code == 422
+        data = resp.json()
+        assert data["error"]["code"] == "MINOR_SIGNAL"
+
+    # Crucial assertion: Gemini was NEVER called!
+    assert fake_client.last_user_content is None
+
+
+@pytest.mark.asyncio
 async def test_malformed_ai_json_retries_then_502():
-    """5. Malformed AI JSON -> retry then 502 AI_BAD_OUTPUT."""
+    """6. Malformed AI JSON -> retry then 502 AI_BAD_OUTPUT."""
     app = create_app()
     fake_client = FakeGeminiClient(response_text="INVALID_JSON_NOT_A_REPORT")
     app.state.gemini_client = fake_client
@@ -95,35 +115,34 @@ async def test_malformed_ai_json_retries_then_502():
 
 
 @pytest.mark.asyncio
-async def test_scrubbing_urls_phones_legal_cites(sample_report_dict):
-    """6. AI output with URLs, phones, and legal citations -> scrubbed."""
+async def test_scrubbing_urls_phones_and_emails(sample_report_dict):
+    """7. AI output with URLs, phones, and emails -> scrubbed."""
     app = create_app()
-    report_dict = dict(sample_report_dict)
-    report_dict["summary"] = (
-        "Check out https://scam-site.com or call 9876543210. Under Section 67 of the IT Act and IPC."
+    draft_dict = dict(sample_report_dict)
+    draft_dict["what_happened"] = (
+        "Check out https://scam-site.com or contact scammer@fraud.example or call 9876543210 for details."
     )
-    fake_client = FakeGeminiClient(response_text=json.dumps(report_dict))
+    fake_client = FakeGeminiClient(response_text=json.dumps(draft_dict))
     app.state.gemini_client = fake_client
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         resp = await c.post("/api/analyze", json=VALID_PAYLOAD)
         assert resp.status_code == 200
-        summary = resp.json()["report"]["summary"]
-        assert "https://" not in summary
-        assert "9876543210" not in summary
-        assert "Section 67" not in summary
-        assert "IT Act" not in summary
-        assert "IPC" not in summary
+        what_happened = resp.json()["draft"]["what_happened"]
+        assert "https://" not in what_happened
+        assert "scam-site.com" not in what_happened
+        assert "9876543210" not in what_happened
+        assert "scammer@fraud.example" not in what_happened
 
 
 @pytest.mark.asyncio
-async def test_guarantee_language_rejected(sample_report_dict):
-    """7. Guarantee language -> rejected / retried then 502."""
+async def test_guarantee_and_legal_conclusions_rejected(sample_report_dict):
+    """8. Guarantee language or legal conclusions -> rejected / retried then 502."""
     app = create_app()
-    report_dict = dict(sample_report_dict)
-    report_dict["summary"] = "We guarantee that the perpetrator will be prosecuted and images will be removed."
-    fake_client = FakeGeminiClient(response_text=json.dumps(report_dict))
+    draft_dict = dict(sample_report_dict)
+    draft_dict["what_happened"] = "Under Section 67 of the IT Act, the perpetrator is guilty and images will be removed 100%."
+    fake_client = FakeGeminiClient(response_text=json.dumps(draft_dict))
     app.state.gemini_client = fake_client
 
     transport = ASGITransport(app=app)
@@ -135,52 +154,50 @@ async def test_guarantee_language_rejected(sample_report_dict):
 
 @pytest.mark.asyncio
 async def test_unknown_resource_ids_dropped(sample_report_dict):
-    """8. Unknown resource ids in action items dropped."""
+    """9. Unknown resource ids in action suggestions dropped."""
     app = create_app()
-    report_dict = dict(sample_report_dict)
-    # Inject unknown resource ID into first action
-    report_dict["actions"][0]["resource_ids"] = ["NCRP", "UNKNOWN_FAKE_RESOURCE_999"]
-    fake_client = FakeGeminiClient(response_text=json.dumps(report_dict))
+    draft_dict = dict(sample_report_dict)
+    draft_dict["action_suggestions"][0]["resource_ids"] = ["NCRP", "UNKNOWN_FAKE_RESOURCE_999"]
+    fake_client = FakeGeminiClient(response_text=json.dumps(draft_dict))
     app.state.gemini_client = fake_client
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         resp = await c.post("/api/analyze", json=VALID_PAYLOAD)
         assert resp.status_code == 200
-        first_action_rids = resp.json()["report"]["actions"][0]["resource_ids"]
+        first_action_rids = resp.json()["draft"]["action_suggestions"][0]["resource_ids"]
         assert "UNKNOWN_FAKE_RESOURCE_999" not in first_action_rids
         assert "NCRP" in first_action_rids
 
 
 @pytest.mark.asyncio
-async def test_ungrounded_stated_detail_downgraded_to_inferred(sample_report_dict):
-    """9. Ungrounded 'stated' detail downgraded to 'inferred'."""
+async def test_ungrounded_identifier_dropped_with_notice(sample_report_dict):
+    """10. Ungrounded account identifier dropped with notice."""
     app = create_app()
-    report_dict = dict(sample_report_dict)
-    # Detail with value not in description
-    report_dict["extracted_details"] = [
-        {
-            "kind": "username",
-            "label": "Fabricated Handle",
-            "value": "totally_unmentioned_account_xyz",
-            "source": "user_description",
-            "basis": "stated",
-        }
+    draft_dict = dict(sample_report_dict)
+    # Add an identifier that never appeared in input
+    draft_dict["account_identifiers"] = [
+        {"kind": "username", "value": "rhea_travels_22", "source": "user_description"},
+        {"kind": "username", "value": "totally_fabricated_account_999", "source": "user_description"},
     ]
-    fake_client = FakeGeminiClient(response_text=json.dumps(report_dict))
+    fake_client = FakeGeminiClient(response_text=json.dumps(draft_dict))
     app.state.gemini_client = fake_client
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         resp = await c.post("/api/analyze", json=VALID_PAYLOAD)
         assert resp.status_code == 200
-        detail = resp.json()["report"]["extracted_details"][0]
-        assert detail["basis"] == "inferred"
+        data = resp.json()
+        idents = data["draft"]["account_identifiers"]
+        assert len(idents) == 1
+        assert idents[0]["value"] == "rhea_travels_22"
+        # Notice added
+        assert any("removed because they didn't match your text" in n for n in data["notices"])
 
 
 @pytest.mark.asyncio
 async def test_prompt_injection_in_evidence_remains_delimited(sample_report_dict):
-    """10. Prompt injection inside evidence_text: delimiters intact, output valid, content in delimited block."""
+    """11. Prompt injection inside evidence_text: delimiters intact, output valid, content in delimited block."""
     app = create_app()
     fake_client = FakeGeminiClient(response_text=json.dumps(sample_report_dict))
     app.state.gemini_client = fake_client
@@ -194,7 +211,6 @@ async def test_prompt_injection_in_evidence_remains_delimited(sample_report_dict
         assert resp.status_code == 200
         assert resp.json()["source"] == "gemini"
 
-    # Verify that what was passed to client has the injection inside <evidence_text> tags
     user_content = fake_client.last_user_content
     assert "<evidence_text>" in user_content
     assert "</evidence_text>" in user_content
@@ -203,7 +219,7 @@ async def test_prompt_injection_in_evidence_remains_delimited(sample_report_dict
 
 @pytest.mark.asyncio
 async def test_delimiter_breaking_attempt_neutralized(sample_report_dict):
-    """11. Delimiter-breaking attempt (`</user_description>`) neutralized."""
+    """12. Delimiter-breaking attempt neutralized."""
     app = create_app()
     fake_client = FakeGeminiClient(response_text=json.dumps(sample_report_dict))
     app.state.gemini_client = fake_client
@@ -216,54 +232,44 @@ async def test_delimiter_breaking_attempt_neutralized(sample_report_dict):
         resp = await c.post("/api/analyze", json=attack_payload)
         assert resp.status_code == 200
 
-    # Verify that the literal closing tag was stripped/neutralized
     user_content = fake_client.last_user_content
-    # There should only be one closing </user_description> at the boundary
     assert user_content.count("</user_description>") == 1
     assert "[sanitized_tag]" in user_content
 
 
 @pytest.mark.asyncio
-async def test_physical_danger_and_minor_resource_ordering(sample_report_dict):
-    """12. Physical danger & minor inputs -> flags set, 112 first, 1098 & Take It Down present, StopNCII excluded."""
+async def test_helpline_1930_only_when_money_sent(sample_report_dict):
+    """13. 1930 only included when money sent."""
     app = create_app()
-    fake_client = FakeGeminiClient(response_text=json.dumps(sample_report_dict))
+    draft_dict = dict(sample_report_dict)
+    # Action suggests 1930
+    draft_dict["action_suggestions"][0]["resource_ids"] = ["HELPLINE_1930", "NCRP"]
+    fake_client = FakeGeminiClient(response_text=json.dumps(draft_dict))
     app.state.gemini_client = fake_client
-
-    crisis_payload = {
-        "description": "They said they will kill me and come to my house. I am 15 years old school student.",
-        "details": {
-            "feels_physically_unsafe": True,
-            "may_be_under_18": True,
-            "threat_types": ["THREAT_TO_SHARE_IMAGES"],
-        },
-        "consent_ai_processing": True,
-    }
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        resp = await c.post("/api/analyze", json=crisis_payload)
-        assert resp.status_code == 200
-        data = resp.json()
-        safety = data["safety"]
-        assert safety["physical_danger"] is True
-        assert safety["possible_minor"] is True
+        # Case A: money_status is not_sent -> 1930 dropped
+        resp1 = await c.post("/api/analyze", json=VALID_PAYLOAD)
+        assert resp1.status_code == 200
+        assert "HELPLINE_1930" not in resp1.json()["draft"]["action_suggestions"][0]["resource_ids"]
 
-        res_ids = [r["id"] for r in data["resources"]]
-        # 112 must be first
-        assert res_ids[0] == "ERSS_112"
-        # 1098 and Take It Down must be present
-        assert "CHILDLINE_1098" in res_ids
-        assert "TAKE_IT_DOWN" in res_ids
-        # StopNCII must NOT be present for minor
-        assert "STOPNCII" not in res_ids
+        # Case B: money_status is sent -> 1930 retained
+        sent_payload = dict(VALID_PAYLOAD)
+        sent_payload["money_status"] = "sent"
+        sent_payload["description"] += " I already paid the amount."
+        draft_dict["money_transferred"] = "sent"
+        fake_client.response_text = json.dumps(draft_dict)
+
+        resp2 = await c.post("/api/analyze", json=sent_payload)
+        assert resp2.status_code == 200
+        assert "HELPLINE_1930" in resp2.json()["draft"]["action_suggestions"][0]["resource_ids"]
 
 
 @pytest.mark.asyncio
 async def test_missing_key_returns_503_ai_not_configured():
-    """13. Missing key -> 503 AI_NOT_CONFIGURED."""
+    """14. Missing key -> 503 AI_NOT_CONFIGURED."""
     app = create_app()
-    # Force real client with no key
     with patch("backend.app.config.Settings.is_ai_configured", False):
         app.state.gemini_client = FakeGeminiClient(
             exception_to_raise=RuntimeError("GEMINI_API_KEY is not configured.")
@@ -277,7 +283,7 @@ async def test_missing_key_returns_503_ai_not_configured():
 
 @pytest.mark.asyncio
 async def test_provider_timeout_or_error_returns_503_ai_unavailable():
-    """14. Provider timeout or network error -> 503 AI_UNAVAILABLE."""
+    """15. Provider timeout or network error -> 503 AI_UNAVAILABLE."""
     app = create_app()
     app.state.gemini_client = FakeGeminiClient(exception_to_raise=TimeoutError("Request timed out"))
 
@@ -290,8 +296,8 @@ async def test_provider_timeout_or_error_returns_503_ai_unavailable():
 
 @pytest.mark.asyncio
 async def test_oversize_body_returns_413(client):
-    """15. Body exceeding 64 KB -> 413 Payload Too Large."""
-    huge_data = {"description": "A" * 70000, "consent_ai_processing": True}
+    """16. Body exceeding 64 KB -> 413 Payload Too Large."""
+    huge_data = {"description": "A" * 70000, "adult_confirmed": True, "consent_ai_processing": True}
     resp = await client.post("/api/analyze", json=huge_data)
     assert resp.status_code == 413
     assert resp.json()["error"]["code"] == "PAYLOAD_TOO_LARGE"
@@ -299,14 +305,12 @@ async def test_oversize_body_returns_413(client):
 
 @pytest.mark.asyncio
 async def test_rate_limit_exceeded_returns_429_with_retry_after(client):
-    """16. Rate limit -> 429 with Retry-After header."""
+    """17. Rate limit -> 429 with Retry-After header."""
     settings = get_settings()
-    # Exhaust rate limit
     for _ in range(settings.RATE_LIMIT_PER_MINUTE):
         resp = await client.post("/api/analyze", json=VALID_PAYLOAD)
         assert resp.status_code == 200
 
-    # Next request should be rate limited
     limit_resp = await client.post("/api/analyze", json=VALID_PAYLOAD)
     assert limit_resp.status_code == 429
     assert limit_resp.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
@@ -315,16 +319,16 @@ async def test_rate_limit_exceeded_returns_429_with_retry_after(client):
 
 @pytest.mark.asyncio
 async def test_logs_contain_none_of_the_input_text(caplog):
-    """17. Logs captured during success and error paths contain NONE of the input text."""
+    """18. Logs captured during success and error paths contain NONE of the input text."""
     app = create_app()
     secret_canary = "VERY_CONFIDENTIAL_UNIQUE_STRING_98765"
     payload = {
         "description": f"I am dealing with blackmail {secret_canary}",
         "evidence_text": f"Proof containing {secret_canary}",
+        "adult_confirmed": True,
         "consent_ai_processing": True,
     }
 
-    # Test success path
     from pathlib import Path
     with open(Path(__file__).parent.parent / "app" / "fixtures" / "sample_report.json", encoding="utf-8") as f:
         fixture_txt = f.read()
@@ -335,46 +339,24 @@ async def test_logs_contain_none_of_the_input_text(caplog):
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         # Success path
         await c.post("/api/analyze", json=payload)
-        # Error path (e.g. invalid json)
+        # Error path
         app.state.gemini_client = FakeGeminiClient(response_text="INVALID")
         await c.post("/api/analyze", json=payload)
 
-    # Check all captured log text
     all_logs = " ".join([record.getMessage() for record in caplog.records])
     assert secret_canary not in all_logs
 
 
 @pytest.mark.asyncio
 async def test_api_sample_validates(client):
-    """18. /api/sample returns valid AnalyzeResponse labelled as sample."""
+    """19. /api/sample returns valid AnalyzeResponse labelled as sample."""
     resp = await client.get("/api/sample")
     assert resp.status_code == 200
     data = resp.json()
     assert data["source"] == "sample"
     assert data["model"] is None
-    # Validate with IncidentReport
-    IncidentReport.model_validate(data["report"])
-
-
-@pytest.mark.asyncio
-async def test_api_resources_matches_catalog(client):
-    """19. /api/resources matches the verified catalog."""
-    resp = await client.get("/api/resources")
-    assert resp.status_code == 200
-    resources = resp.json()
-    assert len(resources) == len(STATIC_RESOURCE_CATALOG)
-    ids = [r["id"] for r in resources]
-    for expected_id in [
-        "NCRP",
-        "HELPLINE_1930",
-        "ERSS_112",
-        "CHILDLINE_1098",
-        "WOMEN_181",
-        "STOPNCII",
-        "TAKE_IT_DOWN",
-        "META_NCII",
-    ]:
-        assert expected_id in ids
+    # Validate with ComplaintDraft
+    ComplaintDraft.model_validate(data["draft"])
 
 
 @pytest.mark.asyncio
