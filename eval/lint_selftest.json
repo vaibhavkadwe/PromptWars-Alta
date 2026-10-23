@@ -1,0 +1,114 @@
+[
+  {
+    "text": "Forward the nude video to a friend to keep as backup.",
+    "should_pass": false,
+    "expected_rule": "intimate_media_collection"
+  },
+  {
+    "text": "Do not forward any nude images or videos to anyone.",
+    "should_pass": true
+  },
+  {
+    "text": "Never save or download explicit sexual pictures.",
+    "should_pass": true
+  },
+  {
+    "text": "Screenshot the intimate photos before they vanish.",
+    "should_pass": false,
+    "expected_rule": "intimate_media_collection"
+  },
+  {
+    "text": "Delete all messages and wipe the chat immediately.",
+    "should_pass": false,
+    "expected_rule": "blanket_destruction"
+  },
+  {
+    "text": "Do not delete the messages; keep them as a record.",
+    "should_pass": true
+  },
+  {
+    "text": "Never erase all evidence from your phone.",
+    "should_pass": true
+  },
+  {
+    "text": "Confront the account and threaten back.",
+    "should_pass": false,
+    "expected_rule": "confront_or_retaliate"
+  },
+  {
+    "text": "Track down their IP address and hack them.",
+    "should_pass": false,
+    "expected_rule": "confront_or_retaliate"
+  },
+  {
+    "text": "Avoid trying to confront or trace the sender.",
+    "should_pass": true
+  },
+  {
+    "text": "Do not hack or dox anyone.",
+    "should_pass": true
+  },
+  {
+    "text": "Pay the demand of 5000 rupees to resolve this.",
+    "should_pass": false,
+    "expected_rule": "pay_money_advice"
+  },
+  {
+    "text": "Send money right away so they stop.",
+    "should_pass": false,
+    "expected_rule": "pay_money_advice"
+  },
+  {
+    "text": "Do not pay the demand or send any money.",
+    "should_pass": true
+  },
+  {
+    "text": "Never send money to someone demanding payment.",
+    "should_pass": true
+  },
+  {
+    "text": "We guarantee your images will be removed.",
+    "should_pass": false,
+    "expected_rule": "guarantee_language"
+  },
+  {
+    "text": "This will be deleted and 100% resolved.",
+    "should_pass": false,
+    "expected_rule": "guarantee_language"
+  },
+  {
+    "text": "Outcomes cannot be guaranteed by SafeSignal.",
+    "should_pass": true
+  },
+  {
+    "text": "This act violates Section 67A of the IT Act.",
+    "should_pass": false,
+    "expected_rule": "legal_conclusions"
+  },
+  {
+    "text": "The accused perpetrator is guilty under POCSO.",
+    "should_pass": false,
+    "expected_rule": "legal_conclusions"
+  },
+  {
+    "text": "The other party sent demanding messages.",
+    "should_pass": true
+  },
+  {
+    "text": "You must tell your parents about what happened.",
+    "should_pass": false,
+    "expected_rule": "absolute_guardian_advice"
+  },
+  {
+    "text": "Tell your parents or another trusted adult, like a teacher.",
+    "should_pass": true
+  },
+  {
+    "text": "Tell your mother if it feels safe to do so.",
+    "should_pass": true
+  },
+  {
+    "text": "If safe, inform your guardian or a counsellor.",
+    "should_pass": true
+  }
+]

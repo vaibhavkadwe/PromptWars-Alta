@@ -1,0 +1,58 @@
+{
+  "rules": [
+    {
+      "id": "intimate_media_collection",
+      "category": "intimate-media collection",
+      "pattern": "\\b(save|download|keep|store|copy|screenshot|screen-shot|forward|send|upload|share|duplicate|record|back\\s*up)\\b.{0,60}?\\b(nude|naked|intimate|explicit|sexual|private)\\b.{0,30}?\\b(image|photo|picture|video|clip|pic|material)s?\\b",
+      "negation_aware": true
+    },
+    {
+      "id": "blanket_destruction",
+      "category": "blanket destruction",
+      "pattern": "\\b(delete|destroy|erase|wipe)\\s+(everything|all|the\\s+(photos|images|videos|evidence|messages|chat))\\b",
+      "negation_aware": true
+    },
+    {
+      "id": "confront_or_retaliate",
+      "category": "confrontation / hacking / tracing",
+      "pattern": "\\b(confront|threaten\\s+back|trace|track\\s+down|hack|expose|dox|find\\s+out\\s+who)\\b",
+      "negation_aware": true
+    },
+    {
+      "id": "pay_money_advice",
+      "category": "pay / send money advice",
+      "pattern": "\\b(pay\\s+(the\\s+)?(demand|amount|ransom|them|him|her)|pay\\s+\\d+|send\\s+(\\w+\\s+)?(money|cash|payment)|transfer\\s+(\\w+\\s+)?(money|funds))\\b",
+      "negation_aware": true
+    },
+    {
+      "id": "guarantee_language",
+      "category": "guarantee language",
+      "pattern": "\\b(guarantee[ds]?|100%|will\\s+be\\s+(removed|deleted|arrested|prosecuted))\\b",
+      "negation_aware": true
+    },
+    {
+      "id": "legal_conclusions",
+      "category": "legal conclusions",
+      "pattern": "\\b(section\\s+\\d+[a-z]*|ipc\\b|bns\\b|pocso\\b|it\\s+act\\b|guilty\\b|criminal\\b|accused\\b|offender\\b|perpetrator\\b|blackmailer\\b|extortionist\\b)",
+      "negation_aware": false
+    },
+    {
+      "id": "absolute_guardian_advice",
+      "category": "absolute guardian advice",
+      "pattern": "\\b(tell|inform|show)\\s+your\\s+(parents|mother|father|guardian)\\b",
+      "negation_aware": true,
+      "requires_qualifier": true,
+      "qualifier_pattern": "(or\\b|another\\b|if\\s+(it\\s+feels\\s+)?safe)"
+    }
+  ],
+  "negation_phrases": [
+    "do not",
+    "don't",
+    "dont",
+    "never",
+    "avoid",
+    "not to",
+    "cannot",
+    "can't"
+  ]
+}
