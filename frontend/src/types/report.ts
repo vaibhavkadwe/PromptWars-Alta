@@ -1,146 +1,98 @@
 /**
- * TypeScript types for SafeSignal report and workflow state.
+ * TypeScript types for SafeSignal ComplaintDraft architecture and resources.
  */
 
-export type CategoryId =
-  | 'THREAT_TO_SHARE_IMAGES'
-  | 'MONEY_DEMAND'
-  | 'THREAT_TO_CONTACT_OTHERS'
-  | 'COERCION_FOR_MORE_CONTENT'
-  | 'SUSPECTED_NON_CONSENSUAL_RECORDING'
-  | 'SUSPECTED_AI_GENERATED_IMAGERY'
-  | 'IMPERSONATION_OR_FAKE_PROFILE'
-  | 'INSUFFICIENT_INFORMATION'
-
-export type Likelihood = 'stated' | 'likely' | 'possible'
-
-export type DetailKind =
-  | 'date_time'
-  | 'platform'
-  | 'username'
-  | 'money_demand'
-  | 'image_demand'
-  | 'threat'
-  | 'deadline'
-  | 'payment_method'
-  | 'other'
+export type AccountIdentifierKind = 'username' | 'phone' | 'email' | 'upi_id' | 'url' | 'other'
 
 export type Source = 'user_description' | 'evidence_text'
 
-export type Basis = 'stated' | 'inferred'
-
 export type Certainty = 'stated' | 'approximate' | 'unknown' | 'conflicting'
 
-export type RiskLevel = 'routine' | 'elevated' | 'urgent'
-
-export type Urgency = 'now' | 'today' | 'soon'
-
-export type Relevance = 'high' | 'medium' | 'low'
+export type MoneyTransferred = 'sent' | 'not_sent' | 'not_stated'
 
 export type ResourceId =
-  | 'NCRP'
-  | 'HELPLINE_1930'
   | 'ERSS_112'
   | 'CHILDLINE_1098'
-  | 'WOMEN_181'
+  | 'NCRP'
+  | 'HELPLINE_1930'
   | 'STOPNCII'
   | 'TAKE_IT_DOWN'
   | 'META_NCII'
 
-export interface IncidentDetails {
-  incident_when?: string | null
-  platform?: string | null
-  threat_types: CategoryId[]
-  money_demanded?: boolean | null
-  more_images_demanded?: boolean | null
-  immediate_disclosure_threat?: boolean | null
-  feels_physically_unsafe?: boolean | null
-  may_be_under_18?: boolean | null
+export type VerificationLevel = 'primary' | 'partial' | 'needs_review'
+
+export interface Resource {
+  id: ResourceId | string
+  name: string
+  kind: 'link' | 'phone'
+  value: string
+  purpose: string
+  whenToUse: string
+  doesNotCover: string
+  verificationSource: string
+  verificationLevel: VerificationLevel
+  lastChecked: string
 }
 
-export interface AnalyzeRequest {
-  description: string
-  evidence_text?: string | null
-  details: IncidentDetails
-  consent_ai_processing: boolean
-}
-
-export interface CategoryItem {
-  id: CategoryId
-  likelihood: Likelihood
-  rationale: string
-}
-
-export interface ExtractedDetail {
-  kind: DetailKind
-  label: string
+export interface AccountIdentifier {
+  kind: AccountIdentifierKind
   value: string
   source: Source
-  basis: Basis
 }
 
-export interface TimelineItem {
+export interface ChronologyItem {
   when_text?: string | null
   event: string
   source: Source
   certainty: Certainty
 }
 
-export interface MissingInfoItem {
-  question: string
-  why_it_matters: string
-}
-
-export interface RiskAssessment {
-  level: RiskLevel
-  factors: string[]
-  physical_danger_mentioned: boolean
-  self_harm_mentioned: boolean
-  possible_minor: boolean
-}
-
-export interface ActionItem {
-  priority: number
-  title: string
+export interface MissingInformationItem {
+  item: string
   why: string
-  urgency: Urgency
-  resource_ids: ResourceId[]
 }
 
-export interface EvidenceItem {
+export interface EvidenceChecklistItem {
   item: string
   how_to_preserve: string
-  suggested_filename?: string | null
-  relevance: Relevance
+  isAiSuggested?: boolean
 }
 
-export interface IncidentReport {
-  summary: string
-  categories: CategoryItem[]
-  extracted_details: ExtractedDetail[]
-  timeline: TimelineItem[]
-  missing_information: MissingInfoItem[]
-  risk: RiskAssessment
-  actions: ActionItem[]
-  evidence_items: EvidenceItem[]
+export interface ActionSuggestionItem {
+  title: string
+  why: string
+  resource_ids: ResourceId[] | string[]
+}
+
+export interface ComplaintDraft {
+  what_happened: string
+  platform_or_service?: string | null
+  when_it_happened?: string | null
+  account_identifiers: AccountIdentifier[]
+  threat_and_demand: string
+  demand_amount_or_deadline?: string | null
+  money_transferred: MoneyTransferred
+  chronology: ChronologyItem[]
+  supporting_material_user_has: string[]
+  missing_information: MissingInformationItem[]
+  evidence_checklist: EvidenceChecklistItem[]
+  action_suggestions: ActionSuggestionItem[]
   limitations: string[]
 }
 
 export interface SafetyFlags {
   physical_danger: boolean
   self_harm: boolean
-  possible_minor: boolean
 }
 
-export interface Resource {
-  id: ResourceId
-  title: string
-  kind: 'link' | 'phone'
-  value: string
-  purpose: string
-  when: string
-  limitations: string
-  last_checked: string
+export interface AnalyzeRequest {
+  description: string
+  evidence_text?: string | null
+  platform?: string | null
+  incident_when?: string | null
+  money_status?: 'sent' | 'not_sent' | 'unsure' | null
+  adult_confirmed: boolean
+  consent_ai_processing: boolean
 }
 
 export interface AnalyzeResponse {
@@ -149,9 +101,10 @@ export interface AnalyzeResponse {
   model: string | null
   paid_tier: boolean
   generated_at: string
-  report: IncidentReport
+  draft: ComplaintDraft
   safety: SafetyFlags
-  resources: Resource[]
+  notices: string[]
+  resource_ids: string[]
 }
 
 export interface HealthResponse {
@@ -164,32 +117,4 @@ export interface ApiError {
   message: string
   request_id?: string
   retryAfter?: number
-}
-
-// Client review states for interactive editing
-export interface ReviewedDetail {
-  id: string
-  original: ExtractedDetail
-  include: boolean
-  confirmed: boolean
-  valueOverride?: string
-}
-
-export interface ReviewedTimeline {
-  id: string
-  original: TimelineItem
-  include: boolean
-}
-
-export interface ReviewedEvidence {
-  id: string
-  original: EvidenceItem
-  include: boolean
-  confirmed: boolean
-}
-
-export interface ReviewedAction {
-  id: string
-  original: ActionItem
-  include: boolean
 }

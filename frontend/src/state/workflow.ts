@@ -1,108 +1,150 @@
 /**
- * State machine and workflow reducer for SafeSignal.
- * Stores all incident data in-memory only.
+ * SafeSignal single-page state machine and workflow reducer.
+ * Strictly in-memory; no localStorage, sessionStorage, cookies, or IndexedDB.
  */
 
-import { ExportSectionsOptions } from '../lib/exportText'
+import { ActionCard, AgeAnswer, DangerAnswer, MoneyAnswer, triage } from '../triage/rules'
 import {
   AnalyzeResponse,
-  CategoryId,
+  ComplaintDraft,
   HealthResponse,
-  IncidentDetails,
-  ReviewedAction,
-  ReviewedDetail,
-  ReviewedEvidence,
-  ReviewedTimeline,
 } from '../types/report'
 
-export type Step = 'home' | 'intake' | 'analyzing' | 'report' | 'export' | 'error'
+export type Step =
+  | 'home'
+  | 'triage'
+  | 'actionCard'
+  | 'aiIntro'
+  | 'input'
+  | 'reviewOutgoing'
+  | 'analyzing'
+  | 'draft'
+  | 'error'
 
-export interface DraftState {
+export interface InputData {
   description: string
-  evidence_text: string
-  details: IncidentDetails
-  consent_ai_processing: boolean
+  evidenceText: string
+  platform: string
+  incidentWhen: string
+  moneyStatus: 'sent' | 'not_sent' | 'unsure' | null
+  adultConfirmed: boolean
+  consentAi: boolean
+}
+
+export interface RedactionOptions {
+  hidePhones: boolean
+  hideEmails: boolean
+  hideAccounts: boolean
 }
 
 export interface WorkflowState {
   step: Step
-  draft: DraftState
-  response: AnalyzeResponse | null
-  reviewedDetails: ReviewedDetail[]
-  reviewedTimeline: ReviewedTimeline[]
-  reviewedEvidence: ReviewedEvidence[]
-  reviewedActions: ReviewedAction[]
-  exportOptions: ExportSectionsOptions
+  stepStack: Step[]
+  triageAnswers: {
+    money: MoneyAnswer | null
+    age: AgeAnswer | null
+    danger: DangerAnswer | null
+  }
+  actionCard: ActionCard | null
+  useAi: boolean
+  inputData: InputData
+  redactionOptions: RedactionOptions
+  redactionMap: Record<string, string>
+  outgoingText: {
+    description: string
+    evidenceText: string
+  }
+  isSubmitting: boolean
   abortController: AbortController | null
+  draft: ComplaintDraft | null
+  isSample: boolean
+  responseMetadata: {
+    requestId?: string
+    model?: string | null
+    generatedAt?: string
+    notices?: string[]
+    resourceIds?: string[]
+  } | null
   error: { code: string; message: string; retryAfter?: number } | null
   health: HealthResponse | null
   showUrgentModal: boolean
   showPrivacyModal: boolean
 }
 
-export const INITIAL_DRAFT: DraftState = {
+export const INITIAL_INPUT_DATA: InputData = {
   description: '',
-  evidence_text: '',
-  details: {
-    incident_when: '',
-    platform: '',
-    threat_types: [],
-    money_demanded: null,
-    more_images_demanded: null,
-    immediate_disclosure_threat: null,
-    feels_physically_unsafe: false,
-    may_be_under_18: false,
-  },
-  consent_ai_processing: false,
+  evidenceText: '',
+  platform: '',
+  incidentWhen: '',
+  moneyStatus: null,
+  adultConfirmed: false,
+  consentAi: false,
 }
 
-export const INITIAL_EXPORT_OPTIONS: ExportSectionsOptions = {
-  includeSummary: true,
-  includeCategories: true,
-  includeDetails: true,
-  includeTimeline: true,
-  includeEvidence: true,
-  includeActions: true,
-  includeContacts: true,
-  includeOriginalDescription: false, // OFF by default
+export const INITIAL_REDACTION_OPTIONS: RedactionOptions = {
+  hidePhones: true,
+  hideEmails: true,
+  hideAccounts: true,
 }
 
 export const INITIAL_STATE: WorkflowState = {
   step: 'home',
-  draft: INITIAL_DRAFT,
-  response: null,
-  reviewedDetails: [],
-  reviewedTimeline: [],
-  reviewedEvidence: [],
-  reviewedActions: [],
-  exportOptions: INITIAL_EXPORT_OPTIONS,
+  stepStack: ['home'],
+  triageAnswers: {
+    money: null,
+    age: null,
+    danger: null,
+  },
+  actionCard: null,
+  useAi: true,
+  inputData: INITIAL_INPUT_DATA,
+  redactionOptions: INITIAL_REDACTION_OPTIONS,
+  redactionMap: {},
+  outgoingText: {
+    description: '',
+    evidenceText: '',
+  },
+  isSubmitting: false,
   abortController: null,
+  draft: null,
+  isSample: false,
+  responseMetadata: null,
   error: null,
   health: null,
   showUrgentModal: false,
   showPrivacyModal: false,
 }
 
-export const FICTIONAL_SCENARIO_TEXT =
-  "I met someone calling themselves 'rhea_travels_22' on a dating app. We moved to a video call on Monday. " +
-  "Later that week I received a message: 'Pay 15000 by tomorrow 8 pm or I send the video to all your followers'. " +
-  "They provided a UPI ID: quickpay.help@examplebank. I don't know what to do."
+export const FICTIONAL_SCENARIO_INPUT: InputData = {
+  description:
+    "I met someone calling themselves 'rhea_travels_22' on a dating app. We had a video call on Monday. " +
+    "Later that week I received a message: 'Pay 15000 by tomorrow 8 pm or I send the video to all your followers'. " +
+    "They provided a UPI ID: quickpay.help@examplebank. I haven't sent any money.",
+  evidenceText: "Payment requested to quickpay.help@examplebank by tomorrow 8 pm.",
+  platform: "dating app",
+  incidentWhen: "Monday and later that week",
+  moneyStatus: "not_sent",
+  adultConfirmed: true,
+  consentAi: true,
+}
 
 export type WorkflowAction =
-  | { type: 'SET_STEP'; payload: Step }
-  | { type: 'SET_DRAFT'; payload: Partial<DraftState> }
-  | { type: 'SET_DETAILS'; payload: Partial<IncidentDetails> }
-  | { type: 'TOGGLE_THREAT_TYPE'; payload: CategoryId }
+  | { type: 'GO_TO_STEP'; payload: Step }
+  | { type: 'GO_BACK' }
+  | { type: 'POP_STEP' }
+  | { type: 'SET_TRIAGE_ANSWER'; payload: { field: 'money' | 'age' | 'danger'; value: string } }
+  | { type: 'SUBMIT_TRIAGE' }
+  | { type: 'CHOOSE_AI_PATH'; payload: boolean }
+  | { type: 'SET_INPUT_DATA'; payload: Partial<InputData> }
   | { type: 'FILL_FICTIONAL_EXAMPLE' }
+  | { type: 'SET_REDACTION_OPTIONS'; payload: Partial<RedactionOptions> }
+  | { type: 'PREPARE_OUTGOING'; payload: { description: string; evidenceText: string; tokenMap: Record<string, string> } }
   | { type: 'START_ANALYSIS'; payload: AbortController }
   | { type: 'ANALYSIS_SUCCESS'; payload: AnalyzeResponse }
   | { type: 'ANALYSIS_ERROR'; payload: { code: string; message: string; retryAfter?: number } }
   | { type: 'CANCEL_ANALYSIS' }
-  | { type: 'UPDATE_DETAIL'; payload: { id: string; include?: boolean; confirmed?: boolean; valueOverride?: string } }
-  | { type: 'UPDATE_TIMELINE'; payload: { id: string; include: boolean } }
-  | { type: 'UPDATE_EVIDENCE'; payload: { id: string; include?: boolean; confirmed?: boolean } }
-  | { type: 'UPDATE_ACTION'; payload: { id: string; include: boolean } }
-  | { type: 'SET_EXPORT_OPTIONS'; payload: Partial<ExportSectionsOptions> }
+  | { type: 'UPDATE_DRAFT'; payload: Partial<ComplaintDraft> }
+  | { type: 'SET_MANUAL_DRAFT'; payload: ComplaintDraft }
   | { type: 'SET_HEALTH'; payload: HealthResponse }
   | { type: 'TOGGLE_URGENT_MODAL'; payload?: boolean }
   | { type: 'TOGGLE_PRIVACY_MODAL'; payload?: boolean }
@@ -110,210 +152,264 @@ export type WorkflowAction =
 
 export function workflowReducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
   switch (action.type) {
-    case 'SET_STEP':
-      return { ...state, step: action.payload }
-
-    case 'SET_DRAFT':
+    case 'GO_TO_STEP': {
+      const nextStep = action.payload
+      if (nextStep === state.step) return state
+      // Synchronize pushState without sensitive data
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: nextStep }, '')
+      }
       return {
         ...state,
-        draft: { ...state.draft, ...action.payload },
+        step: nextStep,
+        stepStack: [...state.stepStack, nextStep],
+        error: null,
+      }
+    }
+
+    case 'GO_BACK': {
+      if (state.stepStack.length <= 1) {
+        return state
+      }
+      const newStack = [...state.stepStack]
+      newStack.pop() // remove current step
+      let prevStep = newStack[newStack.length - 1] || 'home'
+
+      // analyzing is never a target for back/forward
+      if (prevStep === 'analyzing') {
+        prevStep = 'input'
       }
 
-    case 'SET_DETAILS':
-      return {
-        ...state,
-        draft: {
-          ...state.draft,
-          details: { ...state.draft.details, ...action.payload },
-        },
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.back()
       }
 
-    case 'TOGGLE_THREAT_TYPE': {
-      const current = state.draft.details.threat_types
-      const exists = current.includes(action.payload)
-      const updated = exists ? current.filter((t) => t !== action.payload) : [...current, action.payload]
       return {
         ...state,
-        draft: {
-          ...state.draft,
-          details: { ...state.draft.details, threat_types: updated },
+        step: prevStep,
+        stepStack: newStack,
+        isSubmitting: false,
+      }
+    }
+
+    case 'POP_STEP': {
+      // Triggered by window popstate
+      if (state.stepStack.length <= 1) {
+        return { ...state, step: 'home', stepStack: ['home'] }
+      }
+      const newStack = [...state.stepStack]
+      newStack.pop()
+      let prevStep = newStack[newStack.length - 1] || 'home'
+      if (prevStep === 'analyzing') {
+        prevStep = 'input'
+      }
+      return {
+        ...state,
+        step: prevStep,
+        stepStack: newStack,
+        isSubmitting: false,
+      }
+    }
+
+    case 'SET_TRIAGE_ANSWER': {
+      const { field, value } = action.payload
+      return {
+        ...state,
+        triageAnswers: {
+          ...state.triageAnswers,
+          [field]: value,
         },
       }
     }
 
-    case 'FILL_FICTIONAL_EXAMPLE':
-      return {
-        ...state,
-        step: 'intake',
-        draft: {
-          ...state.draft,
-          description: FICTIONAL_SCENARIO_TEXT,
-          evidence_text: 'Payment demand sent to UPI quickpay.help@examplebank. Threat deadline stated: tomorrow 8 pm.',
-          details: {
-            incident_when: 'Monday video call, threat received later that week',
-            platform: 'dating app',
-            threat_types: ['THREAT_TO_SHARE_IMAGES', 'MONEY_DEMAND', 'THREAT_TO_CONTACT_OTHERS'],
-            money_demanded: true,
-            more_images_demanded: false,
-            immediate_disclosure_threat: true,
-            feels_physically_unsafe: false,
-            may_be_under_18: false,
-          },
-          // Keep consent as user must tick it themselves or can be set
-          consent_ai_processing: false,
-        },
+    case 'SUBMIT_TRIAGE': {
+      const { money, age, danger } = state.triageAnswers
+      if (!money || !age || !danger) return state
+
+      const card = triage({ money, age, danger })
+      const nextStep: Step = 'actionCard'
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: nextStep }, '')
       }
 
-    case 'START_ANALYSIS':
       return {
         ...state,
-        step: 'analyzing',
+        actionCard: card,
+        step: nextStep,
+        stepStack: [...state.stepStack, nextStep],
+        useAi: !card.isAiDisabled,
+      }
+    }
+
+    case 'CHOOSE_AI_PATH': {
+      const useAi = action.payload && (!state.actionCard || !state.actionCard.isAiDisabled)
+      const nextStep: Step = 'input'
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: nextStep }, '')
+      }
+      return {
+        ...state,
+        useAi,
+        step: nextStep,
+        stepStack: [...state.stepStack, nextStep],
+      }
+    }
+
+    case 'SET_INPUT_DATA': {
+      return {
+        ...state,
+        inputData: {
+          ...state.inputData,
+          ...action.payload,
+        },
+      }
+    }
+
+    case 'FILL_FICTIONAL_EXAMPLE': {
+      // Set fictional triage + input
+      const fictionalTriage = triage({ money: 'no', age: 'no', danger: 'no' })
+      return {
+        ...state,
+        triageAnswers: { money: 'no', age: 'no', danger: 'no' },
+        actionCard: fictionalTriage,
+        useAi: true,
+        inputData: FICTIONAL_SCENARIO_INPUT,
+      }
+    }
+
+    case 'SET_REDACTION_OPTIONS': {
+      return {
+        ...state,
+        redactionOptions: {
+          ...state.redactionOptions,
+          ...action.payload,
+        },
+      }
+    }
+
+    case 'PREPARE_OUTGOING': {
+      return {
+        ...state,
+        outgoingText: {
+          description: action.payload.description,
+          evidenceText: action.payload.evidenceText,
+        },
+        redactionMap: action.payload.tokenMap,
+        step: 'reviewOutgoing',
+        stepStack: [...state.stepStack, 'reviewOutgoing'],
+      }
+    }
+
+    case 'START_ANALYSIS': {
+      return {
+        ...state,
+        isSubmitting: true,
         abortController: action.payload,
+        step: 'analyzing',
         error: null,
       }
+    }
 
     case 'ANALYSIS_SUCCESS': {
       const resp = action.payload
-      const rep = resp.report
-
-      const reviewedDetails: ReviewedDetail[] = rep.extracted_details.map((d, i) => ({
-        id: `detail-${i}`,
-        original: d,
-        include: true,
-        confirmed: d.basis === 'stated',
-        valueOverride: undefined,
-      }))
-
-      const reviewedTimeline: ReviewedTimeline[] = rep.timeline.map((t, i) => ({
-        id: `timeline-${i}`,
-        original: t,
-        include: true,
-      }))
-
-      const reviewedEvidence: ReviewedEvidence[] = rep.evidence_items.map((e, i) => ({
-        id: `evidence-${i}`,
-        original: e,
-        include: true,
-        confirmed: false,
-      }))
-
-      const reviewedActions: ReviewedAction[] = rep.actions.map((a, i) => ({
-        id: `action-${i}`,
-        original: a,
-        include: true,
-      }))
-
+      const nextStep: Step = 'draft'
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: nextStep }, '')
+      }
       return {
         ...state,
-        step: 'report',
-        response: resp,
-        reviewedDetails,
-        reviewedTimeline,
-        reviewedEvidence,
-        reviewedActions,
+        isSubmitting: false,
         abortController: null,
-        error: null,
+        draft: resp.draft,
+        isSample: resp.source === 'sample',
+        responseMetadata: {
+          requestId: resp.request_id,
+          model: resp.model,
+          generatedAt: resp.generated_at,
+          notices: resp.notices,
+          resourceIds: resp.resource_ids,
+        },
+        step: nextStep,
+        stepStack: [...state.stepStack, nextStep],
       }
     }
 
-    case 'ANALYSIS_ERROR':
+    case 'ANALYSIS_ERROR': {
       return {
         ...state,
-        step: 'error',
-        error: action.payload,
+        isSubmitting: false,
         abortController: null,
+        error: action.payload,
+        step: 'error',
       }
+    }
 
-    case 'CANCEL_ANALYSIS':
+    case 'CANCEL_ANALYSIS': {
       if (state.abortController) {
         state.abortController.abort()
       }
+      // Return to reviewOutgoing or input
+      const prevStep: Step = state.useAi ? 'reviewOutgoing' : 'input'
       return {
         ...state,
-        step: 'intake',
+        isSubmitting: false,
         abortController: null,
-      }
-
-    case 'UPDATE_DETAIL': {
-      const { id, include, confirmed, valueOverride } = action.payload
-      return {
-        ...state,
-        reviewedDetails: state.reviewedDetails.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                include: include !== undefined ? include : item.include,
-                confirmed: confirmed !== undefined ? confirmed : item.confirmed,
-                valueOverride: valueOverride !== undefined ? valueOverride : item.valueOverride,
-              }
-            : item,
-        ),
+        step: prevStep,
       }
     }
 
-    case 'UPDATE_TIMELINE': {
-      const { id, include } = action.payload
+    case 'UPDATE_DRAFT': {
+      if (!state.draft) return state
       return {
         ...state,
-        reviewedTimeline: state.reviewedTimeline.map((item) =>
-          item.id === id ? { ...item, include } : item,
-        ),
+        draft: {
+          ...state.draft,
+          ...action.payload,
+        },
       }
     }
 
-    case 'UPDATE_EVIDENCE': {
-      const { id, include, confirmed } = action.payload
+    case 'SET_MANUAL_DRAFT': {
+      const nextStep: Step = 'draft'
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: nextStep }, '')
+      }
       return {
         ...state,
-        reviewedEvidence: state.reviewedEvidence.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                include: include !== undefined ? include : item.include,
-                confirmed: confirmed !== undefined ? confirmed : item.confirmed,
-              }
-            : item,
-        ),
+        draft: action.payload,
+        isSample: false,
+        step: nextStep,
+        stepStack: [...state.stepStack, nextStep],
       }
     }
 
-    case 'UPDATE_ACTION': {
-      const { id, include } = action.payload
-      return {
-        ...state,
-        reviewedActions: state.reviewedActions.map((item) =>
-          item.id === id ? { ...item, include } : item,
-        ),
-      }
-    }
-
-    case 'SET_EXPORT_OPTIONS':
-      return {
-        ...state,
-        exportOptions: { ...state.exportOptions, ...action.payload },
-      }
-
-    case 'SET_HEALTH':
+    case 'SET_HEALTH': {
       return { ...state, health: action.payload }
+    }
 
-    case 'TOGGLE_URGENT_MODAL':
+    case 'TOGGLE_URGENT_MODAL': {
       return {
         ...state,
-        showUrgentModal: action.payload !== undefined ? action.payload : !state.showUrgentModal,
+        showUrgentModal: action.payload ?? !state.showUrgentModal,
       }
+    }
 
-    case 'TOGGLE_PRIVACY_MODAL':
+    case 'TOGGLE_PRIVACY_MODAL': {
       return {
         ...state,
-        showPrivacyModal: action.payload !== undefined ? action.payload : !state.showPrivacyModal,
+        showPrivacyModal: action.payload ?? !state.showPrivacyModal,
       }
+    }
 
-    case 'RESET':
-      // Return fresh state dropping all incident references
+    case 'RESET': {
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ step: 'home' }, '')
+      }
       return {
         ...INITIAL_STATE,
         health: state.health, // preserve health check status
       }
+    }
 
     default:
       return state

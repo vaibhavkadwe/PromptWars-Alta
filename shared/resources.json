@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ERSS_112",
+    "name": "Emergency Response Support System (112)",
+    "kind": "phone",
+    "value": "112",
+    "purpose": "Emergency response (police, fire, ambulance). Use for immediate danger or threats of physical harm.",
+    "whenToUse": "Immediate danger to your safety, threats of physical violence, or immediate crisis.",
+    "doesNotCover": "Not for non-urgent reporting; no response-time promise.",
+    "verificationSource": "india.gov.in helpline directory",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "CHILDLINE_1098",
+    "name": "Childline (1098)",
+    "kind": "phone",
+    "value": "1098",
+    "purpose": "Free 24-hour helpline for children in need of care and protection. Use if under 18 or unsure and want to talk to someone trained.",
+    "whenToUse": "You may be under 18, unsure of your options, or need confidential guidance from trained counsellors.",
+    "doesNotCover": "The government is integrating it with 112; the number is reported to remain active; no outcome promised.",
+    "verificationSource": "india.gov.in directory; Lok Sabha answer of 29 Nov 2024",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "NCRP",
+    "name": "National Cyber Crime Reporting Portal",
+    "kind": "link",
+    "value": "https://cybercrime.gov.in/",
+    "purpose": "Government of India portal to report cybercrime online, with special focus on crimes against women and children.",
+    "whenToUse": "Use to prepare and file an official online cybercrime complaint with law enforcement.",
+    "doesNotCover": "Does not file anything by opening; outcomes and timelines are not guaranteed; do not assume anonymity or confidentiality — check the portal's own information; guides report separate routes for women/child-related and other cybercrime — confirm on the portal.",
+    "verificationSource": "Kerala Police notice on the portal and 1930; route names from secondary guides",
+    "verificationLevel": "partial",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "HELPLINE_1930",
+    "name": "National Cyber Crime Helpline (1930)",
+    "kind": "phone",
+    "value": "1930",
+    "purpose": "National cybercrime helpline linked to the portal, listed as available 24 hours; mainly used for online financial fraud.",
+    "whenToUse": "Use ONLY if money has already been sent (UPI, bank, card, wallet) because of threats, or a payment is in progress; also tell your bank or payment app.",
+    "doesNotCover": "Not a general sextortion or image-removal helpline; cannot promise recovery of money.",
+    "verificationSource": "Kerala Police notice; india.gov.in directory",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "STOPNCII",
+    "name": "StopNCII.org",
+    "kind": "link",
+    "value": "https://stopncii.org/",
+    "purpose": "Free tool, for people 18+ (or images taken when 18+), that makes a digital fingerprint on your own device so participating platforms can detect and remove matching images; the image is not uploaded.",
+    "whenToUse": "Intimate images of you exist and may be shared, or have been threatened to be shared on participating platforms.",
+    "doesNotCover": "Works only on participating platforms; does not cover the whole internet; keep your case number and PIN; SafeSignal never handles the images.",
+    "verificationSource": "stopncii.org/faq",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "TAKE_IT_DOWN",
+    "name": "Take It Down (NCMEC)",
+    "kind": "link",
+    "value": "https://takeitdown.ncmec.org/",
+    "purpose": "Free NCMEC service for images or videos taken when under 18; only a fingerprint is shared, the image stays on your device.",
+    "whenToUse": "Nude, sexual, or intimate images or videos were taken when you were under 18, and someone is threatening to share them.",
+    "doesNotCover": "Participating public or unencrypted platforms only; run by a US non-profit, confirm it suits your situation; ideally use with a trusted adult or Childline.",
+    "verificationSource": "takeitdown.ncmec.org",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  },
+  {
+    "id": "META_NCII",
+    "name": "Meta Intimate Images Support",
+    "kind": "link",
+    "value": "https://www.meta.com/safety/topics/bullying-harassment/ncii/",
+    "purpose": "Meta's page on sextortion and intimate-image abuse and how to report threats and images shared without permission on Instagram, Facebook and Messenger.",
+    "whenToUse": "Threats, blackmail, or image abuse taking place on Meta platforms (Instagram, Facebook, Messenger).",
+    "doesNotCover": "Covers Meta apps only.",
+    "verificationSource": "meta.com",
+    "verificationLevel": "primary",
+    "lastChecked": "2026-10-23"
+  }
+]

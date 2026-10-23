@@ -25,7 +25,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Mandatory security headers
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self'; "
+            "script-src 'self' 'wasm-unsafe-eval'; "
+            "worker-src 'self' blob:; "
             "style-src 'self'; "
             "img-src 'self' data:; "
             "connect-src 'self'; "

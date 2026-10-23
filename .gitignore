@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# Vendor
+public/vendor/tesseract/
+frontend/public/vendor/tesseract/
+
 # Python
 __pycache__/
 *.py[cod]

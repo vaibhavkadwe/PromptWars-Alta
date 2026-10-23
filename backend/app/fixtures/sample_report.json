@@ -1,187 +1,73 @@
 {
-  "summary": "The user met an individual with the handle rhea_travels_22 on a dating app and engaged in a video call on a Monday. Later that week, the user received an explicit extortion demand requiring 15000 by tomorrow 8 pm to a specified UPI ID under threat of sending the recorded video to the user's followers.",
-  "categories": [
-    {
-      "id": "THREAT_TO_SHARE_IMAGES",
-      "likelihood": "stated",
-      "rationale": "The contact explicitly stated they would send the recorded video to all of the user's followers if payment is not made."
-    },
-    {
-      "id": "MONEY_DEMAND",
-      "likelihood": "stated",
-      "rationale": "An exact financial demand of 15000 via a specific UPI identifier was received."
-    },
-    {
-      "id": "THREAT_TO_CONTACT_OTHERS",
-      "likelihood": "stated",
-      "rationale": "The extortionist specifically threatened to distribute the recording to all followers of the user."
-    },
-    {
-      "id": "SUSPECTED_NON_CONSENSUAL_RECORDING",
-      "likelihood": "possible",
-      "rationale": "The interaction began on a video call without indication that recording was disclosed or consented to."
-    }
-  ],
-  "extracted_details": [
+  "what_happened": "I met an account using the handle rhea_travels_22 on a dating app. We had a video call on Monday. Later that week, the person sent messages demanding money and threatening to share a video of me.",
+  "platform_or_service": "dating app",
+  "when_it_happened": "Monday and later that week",
+  "account_identifiers": [
     {
       "kind": "username",
-      "label": "Contact Username",
       "value": "rhea_travels_22",
-      "source": "user_description",
-      "basis": "stated"
+      "source": "user_description"
     },
     {
-      "kind": "money_demand",
-      "label": "Demanded Amount",
-      "value": "15000",
-      "source": "user_description",
-      "basis": "stated"
-    },
-    {
-      "kind": "deadline",
-      "label": "Payment Deadline",
-      "value": "tomorrow 8 pm",
-      "source": "user_description",
-      "basis": "stated"
-    },
-    {
-      "kind": "payment_method",
-      "label": "Payment Recipient UPI",
+      "kind": "upi_id",
       "value": "quickpay.help@examplebank",
-      "source": "user_description",
-      "basis": "stated"
-    },
-    {
-      "kind": "platform",
-      "label": "Origin Platform",
-      "value": "dating app (unspecified)",
-      "source": "user_description",
-      "basis": "inferred"
+      "source": "evidence_text"
     }
   ],
-  "timeline": [
+  "threat_and_demand": "The account demanded 15000 and threatened to send the recorded video to my followers unless payment was made.",
+  "demand_amount_or_deadline": "15000 by tomorrow 8 pm",
+  "money_transferred": "not_sent",
+  "chronology": [
     {
       "when_text": "Monday",
-      "event": "User met rhea_travels_22 on a dating app and moved to a video call.",
+      "event": "Had a video call with the account rhea_travels_22.",
       "source": "user_description",
-      "certainty": "approximate"
+      "certainty": "stated"
     },
     {
       "when_text": "Later that week",
-      "event": "User received explicit message demanding 15000 by tomorrow 8 pm.",
-      "source": "user_description",
-      "certainty": "approximate"
-    },
-    {
-      "when_text": "Tomorrow 8 pm",
-      "event": "Stated extortion deadline for sending payment to the provided UPI ID.",
+      "event": "Received demand for 15000 with a UPI ID.",
       "source": "user_description",
       "certainty": "stated"
     }
   ],
+  "supporting_material_user_has": [
+    "Screenshots of the threatening messages",
+    "The UPI address provided for payment"
+  ],
   "missing_information": [
     {
-      "question": "Has any payment already been sent or attempted?",
-      "why_it_matters": "Determines whether immediate banking helpline 1930 intervention or transaction dispute is necessary."
-    },
-    {
-      "question": "What specific dating and video call platforms were used?",
-      "why_it_matters": "Identifies platform-specific evidence export tools, account privacy locks, and reporting flows."
-    },
-    {
-      "question": "Are you under 18 or was the video made when you were under 18?",
-      "why_it_matters": "Determines eligibility for minor protection services such as Childline 1098 and Take It Down."
+      "item": "Exact name of the dating app",
+      "why": "Helps identify the platform service provider for reporting."
     }
   ],
-  "risk": {
-    "level": "elevated",
-    "factors": [
-      "Explicit financial extortion with impending deadline",
-      "Threat to broadcast non-consensual video to user followers",
-      "Perpetrator has possession of victim follower list or contacts"
-    ],
-    "physical_danger_mentioned": false,
-    "self_harm_mentioned": false,
-    "possible_minor": false
-  },
-  "actions": [
+  "evidence_checklist": [
     {
-      "priority": 1,
-      "title": "Do not pay money and do not send more media",
-      "why": "Paying extortionists does not ensure deletion and often leads to higher repeated demands.",
-      "urgency": "now",
-      "resource_ids": []
+      "item": "Threatening chat messages",
+      "how_to_preserve": "Keep the chat history intact and record full screenshots showing timestamps and usernames."
     },
     {
-      "priority": 2,
-      "title": "Preserve complete chat logs and profile evidence",
-      "why": "Capturing full profile URLs, payment messages, and timestamps is necessary before blocking or reporting.",
-      "urgency": "now",
-      "resource_ids": ["NCRP"]
-    },
-    {
-      "priority": 3,
-      "title": "Contact cybercrime helpline if financial transaction occurred",
-      "why": "Immediate reporting to 1930 helps freeze fraudulent financial transactions if payment was initiated.",
-      "urgency": "today",
-      "resource_ids": ["HELPLINE_1930"]
-    },
-    {
-      "priority": 4,
-      "title": "Secure social accounts and lock follower lists",
-      "why": "Changing passwords and making account followers private reduces the perpetrator's leverage.",
-      "urgency": "today",
-      "resource_ids": []
-    },
-    {
-      "priority": 5,
-      "title": "Submit formal report to National Cyber Crime Reporting Portal",
-      "why": "Formal government documentation creates a legal record and aids portal investigations.",
-      "urgency": "soon",
-      "resource_ids": ["NCRP"]
+      "item": "Payment demand details",
+      "how_to_preserve": "Keep record of the UPI ID and deadline without sending any money."
     }
   ],
-  "evidence_items": [
+  "action_suggestions": [
     {
-      "item": "Full screenshot of the extortion message showing deadline and payment demand",
-      "how_to_preserve": "Capture uncropped screen displaying date, time, and sender identifier clearly.",
-      "suggested_filename": "evidence_01_threat_message.png",
-      "relevance": "high"
+      "title": "Preserve messages and secure accounts",
+      "why": "Keep evidence before blocking, and change passwords to prevent unauthorized access.",
+      "resource_ids": [
+        "NCRP"
+      ]
     },
     {
-      "item": "Dating app profile screen and profile URL or handle of rhea_travels_22",
-      "how_to_preserve": "Capture user profile details, bio, and account identifier before account deletion.",
-      "suggested_filename": "evidence_02_perpetrator_profile.png",
-      "relevance": "high"
-    },
-    {
-      "item": "UPI payment identifier message and bank handle quickpay.help@examplebank",
-      "how_to_preserve": "Save exact text and screenshot of the requested payment address.",
-      "suggested_filename": "evidence_03_payment_upi_id.png",
-      "relevance": "high"
-    },
-    {
-      "item": "Call history log showing incoming/outgoing video call on Monday",
-      "how_to_preserve": "Capture screenshot of call log with duration, timestamp, and caller ID.",
-      "suggested_filename": "evidence_04_call_history.png",
-      "relevance": "medium"
-    },
-    {
-      "item": "Any transaction receipts or bank SMS notifications if money was transferred",
-      "how_to_preserve": "Export official banking transaction PDF or screenshot with UTR reference number.",
-      "suggested_filename": "evidence_05_transaction_proof.png",
-      "relevance": "high"
-    },
-    {
-      "item": "List of follower accounts targeted by the threat",
-      "how_to_preserve": "Document which account platform and follower groups the perpetrator referenced.",
-      "suggested_filename": "evidence_06_follower_threat.png",
-      "relevance": "medium"
+      "title": "Report to cybercrime portal",
+      "why": "Prepare an official complaint using the National Cyber Crime Reporting Portal.",
+      "resource_ids": [
+        "NCRP"
+      ]
     }
   ],
   "limitations": [
-    "This preliminary guidance is generated strictly from the provided text and does not constitute legal counsel.",
-    "SafeSignal cannot verify the genuine identity of online accounts or authenticate media.",
-    "Outcomes and enforcement cannot be assured or predicted by SafeSignal."
+    "This draft uses only what you provided, may contain mistakes, cannot verify any account, message or image, is not legal advice, and must be reviewed and corrected by you before use."
   ]
 }

@@ -29,6 +29,7 @@ async def test_live_gemini_smoke():
             "/api/analyze",
             json={
                 "description": FICTIONAL_DESCRIPTION,
+                "adult_confirmed": True,
                 "consent_ai_processing": True,
             },
             timeout=35.0,
@@ -36,5 +37,6 @@ async def test_live_gemini_smoke():
         assert resp.status_code == 200
         data = resp.json()
         assert data["source"] == "gemini"
-        assert len(data["report"]["actions"]) >= 4
-        assert len(data["resources"]) > 0
+        assert "draft" in data
+        assert len(data["draft"]["action_suggestions"]) >= 1
+        assert len(data["resource_ids"]) > 0

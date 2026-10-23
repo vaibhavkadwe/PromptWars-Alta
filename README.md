@@ -1,302 +1,275 @@
-# SafeSignal
+# SafeSignal — Safety-First First-Response Assistant
 
-SafeSignal is a secure, privacy-first, Gemini-powered first-response web application designed for individuals in India (primarily young people) facing sextortion, digital blackmail, or intimate-image abuse. It transforms messy, confusing text and message excerpts into an organised incident summary, chronological timeline, evidence-preservation checklist, and prioritised safety and reporting plan.
+SafeSignal is an emergency, privacy-first first-response tool for people in India facing sextortion, digital blackmail, threats to distribute intimate images, non-consensual recording, and suspected AI-generated intimate imagery.
 
-> **CRITICAL DISCLAIMER:** SafeSignal provides first-response triage and organizational guidance. It is **NOT** legal counsel, law enforcement, or psychological crisis counselling.
+It is **NOT** a law-enforcement agency, legal adviser, forensic tool, image-authenticity detector, perpetrator investigator, automatic complaint filer, or evidence store. Its core promise is to help an individual move from a terrifying, confusing threat to an immediate safer action plan and, optionally, an editable, structured draft to prepare an official cybercrime complaint.
+
+> **CRITICAL DISCLAIMER:** SafeSignal provides initial risk routing and generic complaint-preparation guidance. It does not provide legal advice, does not file complaints automatically, and cannot guarantee safety, content removal, or monetary recovery.
 
 ---
 
-## 1. What and Why
+## 1. What Changed and Why (Safety-First v2)
 
-Digital blackmail and intimate image threats are traumatic, fast-moving crises. Victims are frequently disoriented, terrified of public humiliation, and unsure whether to pay, delete chats, or report. 
-
-SafeSignal bridges this gap by providing an immediate, confidential triage workspace where a user can safely organize facts, preserve critical legal evidence before it disappears, and understand their official recourse options in India (such as 112, 1098, 1930, and cybercrime.gov.in) without requiring accounts, logins, or uploading private media.
+In this v2 release, SafeSignal was overhauled from an experimental extraction MVP to a strict safety-first first-response system:
+1. **Deterministic Client-Side Triage:** Immediate risk routing via 3 simple questions (money, age, danger) executing 100% in-browser with zero backend, zero network, and zero AI. Young people and physical danger are prioritized immediately.
+2. **Conservative Minor Protection:** If a user is under 18 or skips age ("prefer not to say"), all AI features and screenshot pickers are disabled. Guidance routes exclusively through safe adult pathways (parent/guardian, trusted teacher, Childline 1098, ERSS 112, Take It Down) without ever unconditionally forcing parental disclosure.
+3. **Server-Side Heuristic Minor Screen (`MINOR_SIGNAL`):** Even if triage answers say adult, any minor indicators in description or evidence (e.g. "I'm 15", "in school", "class 10") immediately halt processing with status 422 (`MINOR_SIGNAL`) without sending data to Google Gemini.
+4. **Local-Only Screenshot OCR:** Adult users can extract text from message screenshots locally using self-hosted `tesseract.js` (worker, WASM core, and English trained data served from same-origin `/vendor/tesseract/`). Strictly verifies PNG/JPEG magic bytes and dimensions (≤4096×4096). Workers are terminated immediately; zero images or thumbnails are uploaded or saved.
+5. **Pre-Flight PII Redaction:** Phone numbers, email addresses, and UPI/account identifiers are detected and replaced with tokens like `[PHONE_1]` before transmission, and re-inserted locally in the browser when viewing the complaint draft.
+6. **Complaint-Drafting Assistant (`ComplaintDraft`):** Replaced legacy generic categorization with an editable, generic complaint draft, deterministic evidence checklist, and allowed resource referrals.
+7. **Multi-Layer Server-Side Guards:**
+   - URL, email, phone digit, and legal citation scrubbing.
+   - Forbidden legal-conclusion and guarantee language rejection (`Section \d+`, IPC, BNS, POCSO, IT Act, guilty, perpetrator, guarantee, 100%).
+   - Token grounding verification (concrete tokens not in user text are dropped with user notices).
+   - Negation-aware safety linting.
+8. **Universal State & Step Stack Navigation:** In-memory reducer state synchronized with `window.history.pushState({ step })` (storing only step names, no data). Visible Back button on every screen; Start Over uses inline two-step confirmation ("Tap again to clear everything").
+9. **Elimination of Confirmed State & Auto-Downloads:** Replaced mark-confirmed workflows and automatic downloads with per-section Copy buttons and a clean Print / Save a copy view with print-only styling.
 
 ---
 
 ## 2. Implemented vs. Out of Scope
 
-### What Is Implemented
-- **Deterministic Crisis & Minor Screening:** Instant pattern recognition for physical danger threats (`112`), self-harm ideation, and minors (`1098` Childline, Take It Down).
-- **Delimiter-Guarded Prompt Engineering:** Untrusted input wrapped in strict delimiters (`<user_description>`, `<evidence_text>`, `<user_details>`) with delimiter-breaking attack neutralization.
-- **Strict Structured Outputs:** Gemini structured output schema enforced via Pydantic v2 `IncidentReport` model with automated retry on bad output.
-- **Scrubbing & Grounding Verification:** Deterministic scrubbing of raw URLs, email addresses, phone-like digit runs, and legal citations (`IPC`, `IT Act`, `Section 67`). Grounding checks downgrade ungrounded "stated" details to "inferred".
-- **Guarantee Language Rejection:** Rejects model responses promising prosecution, content removal, or 100% safety.
-- **Static Verified Resource Catalog:** 8 verified Indian emergency numbers and reporting portals (`NCRP`, `1930`, `112`, `1098`, `181`, `StopNCII`, `Take It Down`, `Meta NCII`).
-- **Complete In-Memory State (`useReducer`):** Zero persistence. No database, no cookies, no `localStorage`, no `sessionStorage`, no `IndexedDB` for incident data.
-- **Interactive Review & Redaction:** Users can confirm, edit inline, or remove any extracted detail, timeline event, evidence item, or action item before export.
-- **Privacy-Preserving Metadata Logging:** Server logs strictly operational metadata (route, latency ms, status, input length buckets). Content is never logged.
-- **Security Middlewares:** 64 KB hard request body cap (returns 413), strict CSP, nosniff, no-referrer, permissions policy disabling camera/mic/geo, and `Cache-Control: no-store` on all `/api` responses.
-- **In-Memory Rate Limiting:** Sliding window limiter (6 req/min per IP, 300 req/day cap) returning 429 with `Retry-After`.
-- **Text-Only Evidence Loader:** Validates `.txt` files (≤ 100 KB, UTF-8, no NUL/binary bytes). Strictly forbids image uploads.
-- **Single Deployable Container:** Production FastAPI app serves the Vite React bundle at `/` and API routes at `/api`.
+### Implemented Controls
+- **Client-Side Deterministic Safety Triage:** 27-combination invariant test matrix covering danger, age, and financial demands.
+- **Header on Every Screen:** Urgent help static sheet (112, 1098, safety rules, portal link), Privacy & limits modal, Quick exit button (`location.replace` to neutral site).
+- **Single-Source Reporting Resources (`shared/resources.json`):** 7 verified emergency and reporting resources in India.
+- **Local OCR Worker Isolation:** Dynamic import of Tesseract.js, self-hosted WASM core/lang assets, magic byte verification, 5 MB and 4096px caps, worker termination.
+- **Client PII Redaction & Re-Insertion:** Toggles for phone, email, and UPI/account numbers.
+- **ComplaintDraft Schema & Prompt Injection Hardening:** Delimited user data with tag neutralization (`</user_description>`).
+- **Comprehensive Server Guards:** Scrubbing, grounding, legal term rejection, negation-aware safety linting, allowlisted resource IDs.
+- **Zero Persistent Storage:** No `localStorage`, `sessionStorage`, `IndexedDB`, or cookies for incident data.
+- **Strict Middlewares:** 64 KB request body cap (413 Payload Too Large), security headers (CSP with `wasm-unsafe-eval` and `blob:` workers), in-memory sliding window rate limiter (6 req/min, 300 req/day).
 
-### What Is Explicitly Out of Scope (Not Built)
-- Accounts, user registration, and authentication.
-- Databases, cloud storage, and persistence.
-- Image/video/screenshot uploads, OCR, and computer vision.
-- Image authenticity checks, face recognition, and reverse image searches.
-- Sender tracing, IP tracking, or doxxing.
-- Free-form chat with the AI model.
-- Automated police report submissions.
-- Third-party analytics, tracking scripts, and CDNs.
+### Explicitly Out of Scope
+- Accounts, user registration, passwords, and sessions.
+- Databases, cloud storage, and persistent incident stores.
+- Sending screenshots or images to any server or AI model.
+- Image authenticity detection, deepfake forensics, or face recognition.
+- Perpetrator tracing, phone lookup, or doxxing.
+- Direct automated filing with police or cybercrime portals.
 
 ---
 
-## 3. Architecture & Data Flow
+## 3. Architecture & User Journey
 
 ```
-[ User Input (Text Only) ]
-            │
-            ▼
-[ Input Sanitization & 64 KB Cap ]
-            │
-            ▼
-[ Deterministic Safety Screen (Regex) ] ──► Flags: Physical Danger / Self-Harm / Minor
-            │
-            ▼
-[ Delimiter-Guarded Prompt Assembly ]
-            │
-            ▼
-[ Google Gemini 2.5 Flash (Structured JSON) ]
-            │
-            ▼
-[ Pydantic v2 IncidentReport Validation ] (1 Retry on failure)
-            │
-            ▼
-[ Post-Processing: Scrubbing & Grounding Check ]
-            │
-            ▼
-[ Deterministic Resource Selection ] ──► Allowlisted Static Catalog
-            │
-            ▼
-[ Ephemeral In-Memory State (React useReducer) ]
-            │
-            ▼
-[ User Review: Edit / Confirm / Exclude ]
-            │
-            ▼
-[ Reviewed Plaintext Export (.txt) / Print ]
+                     ┌──────────────────┐
+                     │       Home       │
+                     └─────────┬────────┘
+                               │ Start Triage
+                               ▼
+                     ┌──────────────────┐
+                     │  Safety Triage   │ ◄── 100% In-Browser (3 Questions)
+                     └─────────┬────────┘
+                               │ Deterministic ActionCard
+                               ▼
+                     ┌──────────────────┐
+                     │   Action Card    │ ◄── Urgent 112 / Safe Adult / Checklist
+                     └─────────┬────────┘
+             Minor /           │ Adult Option
+             Offline Path      ▼
+             ┌───────────►┌──────────┐
+             │            │ AI Intro │ ◄── Explains Data Flow & Terms
+             │            └────┬─────┘
+             │                 │ Choose AI
+             │                 ▼
+             │            ┌──────────┐
+             │            │  Input   │ ◄── Description, Details, Local OCR
+             │            └────┬─────┘
+             │                 │ Next (AI Path)
+             │                 ▼
+             │      ┌─────────────────────┐
+             │      │   Review Outgoing   │ ◄── Inspect Redaction Tokens ([PHONE_1])
+             │      └──────────┬──────────┘
+             │                 │ Send to AI Service
+             │                 ▼
+             │      ┌─────────────────────┐
+             │      │      Analyzing      │ ◄── AbortController with Cancel
+             │      └──────────┬──────────┘
+             │                 │ Success
+             │                 ▼
+             └───────────►┌──────────┐
+                          │  Draft   │ ◄── Editable Textareas, Copy, Print CSS
+                          └──────────┘
 ```
 
 ---
 
-## 4. Stack & Pinned Versions
+## 4. Privacy & Data Flow to Google Gemini
 
-### Backend
-- **Python:** 3.11+
-- **fastapi:** `0.161.1`
-- **uvicorn:** `0.54.0`
-- **pydantic:** `2.14.1`
-- **pydantic-settings:** `2.16.1`
-- **google-genai:** `2.33.0`
-- **python-dotenv:** `1.2.4`
-- **pytest:** `9.1.1`
-- **pytest-asyncio:** `1.4.0`
-- **httpx:** `0.28.1`
-- **ruff:** `0.17.2`
+1. **What is sent:** Only the text the user types or extracted text they review in the Input screen (description, optional evidence text, platform, incident time, money status).
+2. **What is NEVER sent:** Intimate photos/videos, screenshots, images, files, user accounts, IP logs, or unconfirmed personal details.
+3. **When it is sent:** Only after the user confirms they are 18+, checks explicit consent, reviews the redacted text on the Review Outgoing screen, and clicks the explicit **"Send to AI service"** button.
+4. **Offline Alternative:** Users can skip AI entirely at `actionCard`, `aiIntro`, or `input` to create a local preparation draft in memory without sending any data over the network.
 
-### Frontend
-- **React:** `19.3.1`
-- **React DOM:** `19.3.1`
-- **Vite:** `8.3.4`
-- **TypeScript:** `6.0.3`
-- **Vitest:** `4.1.12`
-- **@testing-library/react:** `16.3.2`
-- **ESLint:** `10.13.0` (with custom AST rule forbidding `dangerouslySetInnerHTML`)
+### Tier-Dependent Privacy Copy
+All Gemini terms disclosures are centralized in `frontend/src/content/privacyCopy.ts` (`lastChecked: "2026-10-23"`, source `https://ai.google.dev/gemini-api/terms`):
+- **Paid Tier (`GEMINI_PAID_TIER=true`):** "Google's paid-service terms say it doesn't use this content to improve its products, and describe how it processes the data under its terms. We still can't promise absolute confidentiality."
+- **Free/Unpaid Tier (`GEMINI_PAID_TIER=false`):** "This prototype uses Google's free tier. Under Google's terms for free use, submitted content may be used to improve Google products and may be reviewed by people. Please enter only fictional details."
+
+*Note: This copy must be re-checked against Google's current terms and approved by project owner/legal counsel before unrestricted public deployment.*
 
 ---
 
-## 5. Environment Variables
+## 5. Concise Legal & Regulatory Note (India)
 
-All settings are configured via environment variables or `.env`:
+- **Digital Personal Data Protection (DPDP) Act & Rules 2025:**
+  - Phased commencement is scheduled, with core compliance duties expected around 13 May 2027 (no accelerating amendments discovered as of late September/October 2026).
+  - Verifiable parental consent mechanisms for processing children's personal data remain legally complex and unresolved for unauthenticated emergency first-response tools. SafeSignal addresses this by disabling AI processing, accounts, and server transmission for minors.
+- **Protection of Children from Sexual Offences (POCSO) Act:** Mandatory reporting obligations (Section 19/21) apply when knowledge of child sexual abuse material exists. SafeSignal never collects, hosts, or stores images or child sexual abuse material, and routes minors directly to Childline 1098 and 112.
+- **Information Technology Act & Intermediary Guidelines:** SafeSignal does not act as a host or publisher of intimate content.
+- **Cross-Border Processing:** Transmission of text to Google's Gemini servers involves cross-border cloud processing governed by Google's terms.
+- **Status:** SafeSignal is an experimental hackathon/buildathon prototype. It is **NOT** certified child-safe, does not claim regulatory compliance, and is **NOT** approved for unrestricted public deployment without specialized legal counsel.
 
-| Variable | Default | Description |
+---
+
+## 6. Security Controls
+
+| Category | Control | Status |
 |---|---|---|
-| `GEMINI_API_KEY` | *(None)* | Google Gemini API Key. App starts without key (returns 503 `AI_NOT_CONFIGURED`). |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model identifier used for analysis. |
-| `GEMINI_PAID_TIER` | `false` | Set to `true` if using paid commercial API key (changes privacy notices). |
-| `GEMINI_TIMEOUT_SECONDS` | `30` | Timeout in seconds for Gemini API generation. |
-| `MAX_DESCRIPTION_CHARS` | `4000` | Maximum character length allowed for user description. |
-| `MAX_EVIDENCE_CHARS` | `20000` | Maximum character length allowed for evidence text excerpts. |
-| `RATE_LIMIT_PER_MINUTE` | `6` | Maximum requests per minute per IP address. |
-| `DAILY_ANALYSIS_CAP` | `300` | Maximum requests allowed globally per day. |
-| `TRUST_PROXY` | `false` | Set `true` only when behind a trusted reverse proxy (reads `X-Forwarded-For`). |
-| `APP_ENV` | `development` | Set to `production` to disable `/docs` and enable production protections. |
+| **Storage** | Zero persistent storage (no cookies, localStorage, sessionStorage, IndexedDB) | Implemented |
+| **Logging** | Operational metadata only (`request_id`, status, latency, length buckets); zero input text | Implemented |
+| **OCR Isolation** | Magic byte validation (PNG/JPEG), 4096px limit, self-hosted assets, worker termination | Implemented |
+| **Injection Defense** | Delimiter tag neutralization (`[sanitized_tag]`), strict Pydantic parsing | Implemented |
+| **Output Guards** | Scrubbing (URLs/emails/phones/citations), grounding token validation, safety lint | Implemented |
+| **Transport** | HTTPS termination | Hosting-dependent |
+| **Proxy Headers** | Trusted proxy validation (`TRUST_PROXY=true` only behind sanitized load balancer) | Hosting-dependent |
+| **Confidentiality** | Absolute secrecy across third-party AI infrastructure | Not guaranteed |
+| **Client Cleanliness** | Erasing browser history, cache, or external downloads | Not guaranteed |
 
 ---
 
-## 6. How to Run Locally
+## 7. Reporting Resource Maintenance Procedure
+
+SafeSignal maintains verified Indian reporting and emergency helplines in `shared/resources.json`:
+1. `ERSS_112`: Emergency Response Support System (112) — Primary verified.
+2. `CHILDLINE_1098`: Childline (1098) — Primary verified (Lok Sabha answer 29 Nov 2024).
+3. `NCRP`: National Cyber Crime Reporting Portal (`cybercrime.gov.in`) — Partial verified.
+4. `HELPLINE_1930`: National Cyber Crime Helpline (1930, financial fraud scope) — Primary verified.
+5. `STOPNCII`: StopNCII.org (18+ intimate image hashing) — Primary verified.
+6. `TAKE_IT_DOWN`: Take It Down NCMEC (<18 image hashing) — Primary verified.
+7. `META_NCII`: Meta Harassment & NCII Reporting Page — Primary verified.
+
+### Maintenance Workflow
+1. Re-verify every entry periodically: click every link, dial helplines, and review government gazette/directory updates.
+2. If an entry cannot be verified, set `"verificationLevel": "needs_review"`; the UI will automatically hide it.
+3. Update `"lastChecked"` (ISO date `YYYY-MM-DD`, never in the future) and `"verificationSource"`.
+4. Run `npm test -- src/__tests__/resources.test.ts` to validate schema and UI hiding invariants.
+
+---
+
+## 8. Evaluation & Regression Benchmarks
+
+SafeSignal includes a comprehensive 20-case synthetic evaluation suite (`eval/cases/cases.json`) and controlled replay fixtures (`eval/replays/`).
+
+### How to Run Evaluation
+```bash
+# 1. Run backend pipeline evaluation runner (writes eval/results/pipeline.json)
+PYTHONPATH=. .venv/bin/pytest backend/tests/test_eval_pipeline.py -v
+
+# 2. Run frontend triage evaluation runner (writes eval/results/triage.json)
+npm --prefix frontend test -- src/__tests__/evalTriage.test.ts
+
+# 3. Aggregate metrics and print evaluation report
+python3 eval/summarize.py
+```
+
+### Actual Evaluation Results
+```
+========================================================================
+SafeSignal Synthetic Evaluation Summary Report
+========================================================================
+Evaluation Date: 2026-10-23 08:06 UTC
+Git Commit Hash: f95dc85
+Evaluation Mode: PIPELINE (Deterministic, zero network)
+Manual Review Status: manual review: not performed
+------------------------------------------------------------------------
+Metric A: Hallucinated-Detail Rate: 0.0% (0/14)
+          - Unsupported factual claims in final draft: 0
+          - Automated token grounding applied (does not catch semantic fabrication)
+          - Server Guard Interventions: 1
+          - Adversarial-Replay Catch Rate: 100.0% (9/9)
+------------------------------------------------------------------------
+Metric B: Unsafe-Advice Rate: 0.0% (0/20)
+          - Negation-aware lint violations across triage cards & drafts: 0
+------------------------------------------------------------------------
+Metric C: Minor-Routing Accuracy: 100.0% (4/4)
+          - Evaluated cases: 09 (triage minor), 10 (text minor), 11 (age skipped), 20 (unsafe guardian)
+          - All required routing, conservative items, and Gemini-block enforced: 4/4
+------------------------------------------------------------------------
+Deterministic Triage Suites: 20/20 synthetic cases passed
+                              27/27 3x3x3 combination matrix invariant tests passed
+========================================================================
+```
+
+*Note: Automated token grounding catches invented handles, numbers, and amounts, but cannot detect nuanced semantic fabrication. These 20 synthetic cases provide regression testing, not clinical or legal safety certification.*
+
+---
+
+## 9. Known Limitations
+
+1. **Local OCR Imperfections:** Mobile screenshots with unusual fonts, dark mode artifacts, or compression may yield partial OCR transcripts. Users can edit or paste text manually.
+2. **English Language Only:** Safety lint, heuristic minor patterns, and system prompts currently target English.
+3. **Heuristic Minor Detection:** The server-side minor guard uses conservative keyword heuristics; it is an additional safety backstop, not an age verification system.
+4. **In-Memory Rate Limiting:** Per-instance sliding window in RAM resets on restart and is not distributed across clusters without a shared store.
+5. **Generative Model Nuances:** AI can misinterpret ambiguous text; the draft must always be reviewed by the user.
+6. **Portal Fields Unverified:** Draft sections are generic complaint-preparation organizers; the official portal's exact internal form schema is not guaranteed.
+
+---
+
+## 10. Local Setup & Testing Instructions
 
 ### Prerequisites
 - Python 3.11+
 - Node.js 20+ and npm
 
-### Local Development Setup
-
-1. **Clone repository and configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and optionally add GEMINI_API_KEY
-   ```
-
-2. **Set up Python backend:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r backend/requirements.txt
-   ```
-
-3. **Set up Node frontend:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-4. **Run in Development Mode:**
-   - Terminal 1 (Backend on `http://127.0.0.1:8000`):
-     ```bash
-     source .venv/bin/activate
-     uvicorn backend.app.main:app --reload --port 8000
-     ```
-   - Terminal 2 (Frontend with Vite proxy on `http://localhost:5173`):
-     ```bash
-     cd frontend
-     npm run dev
-     ```
-
-5. **Run in Production Mode (Single Service):**
-   ```bash
-   # 1. Build frontend bundle
-   cd frontend
-   npm run build
-   cd ..
-
-   # 2. Run backend serving built bundle at /
-   source .venv/bin/activate
-   uvicorn backend.app.main:app --port 8000
-   ```
-   Open `http://localhost:8000` in your browser.
-
----
-
-## 7. Linting, Type Checking & Tests
-
-Run all validation checks with:
-
+### 1. Installation
 ```bash
-# Backend linting & tests
+# Clone & enter directory
+cd PromptWars-Alta
+
+# Backend virtualenv
+python3 -m venv .venv
 source .venv/bin/activate
-ruff check backend
-PYTHONPATH=. pytest backend/tests -v
+pip install -r backend/requirements.txt
 
-# Frontend linting, type checking & tests
+# Frontend dependencies (automatically copies Tesseract self-hosted assets)
 cd frontend
-npm run lint
-npx tsc --noEmit
-npm run test
-npm run build
+npm install
+cd ..
 ```
 
----
-
-## 8. Deployment (Docker / Cloud Run / Render)
-
-SafeSignal is packaged as a lightweight, multi-stage Docker container running as a non-root user and listening on `$PORT`:
-
+### 2. Running Locally
 ```bash
-# Build Docker image
-docker build -t safesignal:latest .
+# Option A: Development (Dual Process)
+# Terminal 1: Backend
+source .venv/bin/activate
+uvicorn backend.app.main:app --reload --port 8000
 
-# Run Docker container
-docker run -p 8000:8000 -e GEMINI_API_KEY="your-api-key" safesignal:latest
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+# Open http://localhost:5173
+
+# Option B: Production (Unified Server)
+cd frontend && npm run build && cd ..
+source .venv/bin/activate
+uvicorn backend.app.main:app --port 8000
+# Open http://localhost:8000
 ```
 
-### Cloud Run / Render Deployment Notes
-- **HTTPS:** Ensure your host terminates TLS/HTTPS.
-- **Environment Variables:** Set `GEMINI_API_KEY`, `GEMINI_PAID_TIER`, `APP_ENV=production`, and `TRUST_PROXY=true` in your host management dashboard.
-- **Port:** The container automatically binds to the `$PORT` provided by the cloud runtime.
+### 3. Running All Tests & Validation
+```bash
+# Backend pytest suite (unit + eval pipeline + lint parity)
+PYTHONPATH=. .venv/bin/pytest backend/tests -v
 
----
+# Backend ruff linter
+.venv/bin/ruff check backend
 
-## 9. Security Controls & Guarantees
+# Frontend vitest suite (unit + triage + eval)
+npm --prefix frontend test
 
-### Implemented Controls
-- **Zero In-Memory Storage of Sensitive Logs:** The backend logging configuration strips all descriptions, evidence text, user details, prompts, and model outputs from log streams. Coarse buckets (e.g. `<100`, `1k-5k`) are used for length.
-- **No Browser Persistence:** All client-side incident state is managed in a React `useReducer` lifecycle. If the tab is closed, refreshed, or the "Start a new report" button is clicked, all data is dropped from memory.
-- **Hard Request Body Cap:** 64 KB payload cap enforced on all incoming POST requests before parsing.
-- **Delimiter Injection Hardening:** Delimiter tags like `</user_description>` or `<evidence_text>` inside user submissions are sanitized to `[sanitized_tag]`.
-- **Automated Scrubbing:** Report outputs are scrubbed for external URLs, phone-like digit sequences, email addresses, and legal citations.
-- **Content-Security-Policy:** Enforces `default-src 'self'`, `frame-ancestors 'none'`, and disables browser access to microphone, camera, and geolocation via `Permissions-Policy`.
-
-### Deployment-Dependent Controls
-- **HTTPS Transport Encryption:** Must be enforced at the reverse proxy or cloud load balancer.
-- **Reverse Proxy Header Security:** `TRUST_PROXY` must only be set to `true` when the proxy correctly sanitizes `X-Forwarded-For`.
-
-### What Is NOT Guaranteed
-- **Server Memory During Active Analysis:** While an analysis is running, the text is held in server RAM for the duration of the request.
-- **OS-Level Crash Dumps:** If the host OS crashes during processing, residual memory may appear in system core dumps.
-- **Google Data Terms:** If run on a free-tier key (`GEMINI_PAID_TIER=false`), Google's standard terms permit human reviewers to examine anonymized inputs. Users are warned with an upfront banner to enter fictional data only.
-- **Client Machine Artifacts:** The "Quick exit" and "Start a new report" features clear in-app React memory; they cannot erase browser history, router logs, or files downloaded to the user's hard drive.
-
----
-
-## 10. Resource Catalog Maintenance
-
-The resource catalog in `backend/app/resources.py` and `frontend/src/components/UrgentHelp.tsx` contains 8 verified official resources in India.
-
-### How to Re-Verify & Update
-1. Test each URL in a browser and verify the helpline phone numbers:
-   - `cybercrime.gov.in` (NCRP)
-   - `1930` (Financial Cyber Fraud Helpline)
-   - `112` (Emergency Response Support System)
-   - `1098` (Childline India)
-   - `181` (Women Helpline)
-   - `stopncii.org` (StopNCII)
-   - `takeitdown.ncmec.org` (Take It Down)
-   - `meta.com/.../ncii` (Meta NCII Reporting)
-2. Update the `last_checked` field in `backend/app/resources.py` to the verification date (e.g. `2026-10-23`).
-3. Commit and run backend tests (`pytest backend/tests`).
-
----
-
-## 11. Known Limitations
-
-- **Text Only:** SafeSignal strictly rejects image and video files. It cannot perform OCR on screenshots.
-- **Language:** Analysis prompt and UI are currently in English.
-- **In-Memory Rate Limits:** Rate limits are tracked in server memory and reset when the service restarts. In multi-instance deployments, each instance maintains its own sliding window.
-- **AI Probabilistic Outputs:** While bounded by schema validation, grounding checks, and scrubbing, generative AI can misinterpret nuanced slang or regional terminology.
-
----
-
-## 12. Judge / Evaluator Demo Script
-
-Follow these steps to evaluate SafeSignal end-to-end:
-
-1. **Launch the application:**
-   - In production mode: `python -m uvicorn backend.app.main:app --port 8000`
-   - Visit `http://localhost:8000`.
-2. **Observe Zero-Auth Home Screen:**
-   - Notice no login, sign-up, or tracking cookies exist.
-   - Click **"Privacy & limits"** in the top navigation to inspect the privacy guarantees.
-   - Click **"Urgent help"** to verify immediate access to 112, 1098, 1930, and cybercrime.gov.in.
-3. **Try Fictional Example:**
-   - Click **"Try a fictional example"**.
-   - Notice the form is filled with the fictional scenario (`rhea_travels_22`, 15,000 INR demand, UPI ID).
-   - Check the **"I understand my text will be sent to Google's Gemini API..."** consent box.
-4. **Offline / Fallback Evaluation (No Key Needed):**
-   - Click **"Load fictional example"** or navigate to error fallback.
-   - Click **"View fictional sample"** to inspect a pre-validated report fixture with source label `"Sample — not live AI"`.
-5. **Inspect Sections A–D:**
-   - **Section A:** Review summary, threat category badges (`stated`), and extracted details. Click **"Looks right"** or **"Edit"** on a detail to verify inline review state.
-   - **Section B:** Inspect the chronological timeline and certainty badges.
-   - **Section C:** Check items in the evidence preservation checklist with suggested filenames.
-   - **Section D:** View prioritized next steps with urgency badges (`NOW`, `TODAY`) and clickable verified contact cards (`1930`, `NCRP`).
-6. **Review and Export:**
-   - Click **"Review and export report"**.
-   - Toggle sections in the export checklist. Notice removed items are omitted and confirmed items are tagged `[Confirmed by you]`.
-   - Click **"Download .txt"** to receive the formatted plain text report.
-7. **Clean Reset:**
-   - Click **"Start a new report"**.
-   - Verify that all incident data in React state is immediately cleared.
+# Frontend ESLint & TypeScript compilation
+npm --prefix frontend run lint
+npm --prefix frontend run build
+```
