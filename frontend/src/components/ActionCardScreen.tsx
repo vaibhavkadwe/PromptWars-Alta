@@ -16,178 +16,212 @@ export const ActionCardScreen: React.FC<ActionCardScreenProps> = ({
   const [showMore, setShowMore] = useState(false)
   const [dangerAcknowledged, setDangerAcknowledged] = useState(!card.hasUrgentDanger)
 
-  // Resolve resources from shared catalog
   const catalog = resourcesData as Resource[]
   const relevantResources = catalog.filter((r) => card.resourceIds.includes(r.id))
 
   const visibleItems = card.items.slice(0, 3)
   const remainingItems = card.items.slice(3)
 
+  const renderItem = (
+    item: ActionCard['items'][number],
+    index: number,
+    urgent: boolean,
+  ) => (
+    <article key={item.id} className={`priority-card ${urgent ? 'urgent' : ''}`}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.5rem',
+          marginBottom: '0.65rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span className={`priority-badge ${urgent ? 'urgent' : 'normal'}`}>
+          <span
+            className="status-dot"
+            style={{
+              width: 6,
+              height: 6,
+              animation: urgent ? undefined : 'none',
+              background: urgent ? 'var(--color-tertiary)' : 'var(--color-primary)',
+            }}
+            aria-hidden="true"
+          />
+          PRIORITY {index + 1}
+          {urgent ? ' · URGENT' : ''}
+        </span>
+        <span className="label-sm" style={{ color: 'var(--color-outline)' }}>
+          {urgent ? 'DO THIS FIRST' : 'GUIDED STEP'}
+        </span>
+      </div>
+      <h2
+        style={{
+          fontSize: '1.15rem',
+          marginBottom: '0.5rem',
+          color: urgent ? 'var(--color-tertiary)' : 'var(--color-on-surface)',
+        }}
+      >
+        {item.title}
+      </h2>
+      <div
+        style={{
+          padding: '0.75rem',
+          background: 'var(--color-surface-lowest)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid color-mix(in srgb, var(--color-border) 40%, transparent)',
+          marginBottom: '0.5rem',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.55 }}>
+          <strong>Why:</strong> {item.why}
+        </p>
+      </div>
+      <div className="priority-rule">
+        <span className="material-symbols-outlined" aria-hidden="true">
+          {urgent ? 'pause_circle' : 'check_circle'}
+        </span>
+        <p style={{ margin: 0 }}>
+          Focus on this step before moving on. You can pause and return anytime.
+        </p>
+      </div>
+    </article>
+  )
+
   return (
     <div>
-      {/* R1 Urgent Danger Banner if present */}
       {card.hasUrgentDanger && (
-        <div
-          className="banner banner-urgent"
-          role="alert"
-          style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--color-urgent-text)' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <strong style={{ display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>
-                Immediate Safety Priority
-              </strong>
-              <p style={{ margin: 0 }}>
-                If you are in immediate physical danger, call 112 right now from a safe location.
-              </p>
-            </div>
-            {!dangerAcknowledged && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setDangerAcknowledged(true)}
-                style={{ marginLeft: '1rem', whiteSpace: 'nowrap' }}
-              >
-                Continue anyway
-              </button>
-            )}
+        <div className="banner banner-urgent" role="alert" style={{ marginBottom: '1.5rem' }}>
+          <span className="material-symbols-outlined fill" aria-hidden="true">
+            emergency
+          </span>
+          <div style={{ flex: 1 }}>
+            <strong style={{ display: 'block', marginBottom: '0.25rem' }}>
+              Immediate Safety Priority
+            </strong>
+            <p style={{ margin: 0 }}>
+              If you are in immediate physical danger, call 112 right now from a safe location.
+            </p>
+          </div>
+          {!dangerAcknowledged && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setDangerAcknowledged(true)}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Continue anyway
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="banner banner-calm" style={{ marginBottom: '1.5rem' }}>
+        <span className="material-symbols-outlined" aria-hidden="true">
+          psychology
+        </span>
+        <div>
+          <p style={{ margin: 0, fontWeight: 600 }}>
+            You are not responsible for someone else&apos;s threats or extortion.
+          </p>
+          <p style={{ margin: '0.25rem 0 0', fontSize: 13, color: 'var(--color-muted)' }}>
+            This is a criminal pattern, not personal negligence. Focus on one safe micro-step at a
+            time.
+          </p>
+        </div>
+      </div>
+
+      <section style={{ marginBottom: '1.5rem' }}>
+        <h1 id="action-heading" style={{ fontSize: '1.75rem', marginBottom: '0.4rem' }}>
+          Immediate Safety Actions
+        </h1>
+        <p style={{ color: 'var(--color-muted)', margin: 0 }}>{card.disclaimer}</p>
+      </section>
+
+      {card.isMinorRoute && (
+        <div className="banner banner-info" style={{ marginBottom: '1rem' }}>
+          <span className="material-symbols-outlined" aria-hidden="true">
+            family_restroom
+          </span>
+          <div>
+            <strong>Guidance for Young People:</strong> Safe adult and trusted outreach pathways
+            are highlighted below. AI analysis and screenshot tools are disabled for your safety.
           </div>
         </div>
       )}
 
-      {/* Main Action Steps Card */}
-      <div className="card">
-        <h1 id="action-heading" style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>
-          Your Immediate Safety Steps
-        </h1>
-        <p style={{ color: 'var(--color-muted)', fontSize: '0.95rem', marginBottom: '1.25rem' }}>
-          {card.disclaimer}
-        </p>
+      <div>
+        {visibleItems.map((item, index) => renderItem(item, index, index === 0))}
 
-        {card.isMinorRoute && (
-          <div className="banner banner-info" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
-            <strong>Guidance for Young People:</strong> Safe adult and trusted outreach pathways are highlighted below. AI analysis and screenshot tools are disabled for your safety.
+        {remainingItems.length > 0 && (
+          <div>
+            {!showMore ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowMore(true)}
+                style={{ width: '100%', marginTop: '0.5rem' }}
+              >
+                View more steps ({remainingItems.length})
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  expand_more
+                </span>
+              </button>
+            ) : (
+              <div>
+                {remainingItems.map((item, index) => renderItem(item, index + 3, false))}
+              </div>
+            )}
           </div>
         )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {visibleItems.map((item, index) => (
-            <div
-              key={item.id}
-              style={{
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1rem',
-                backgroundColor: 'var(--color-surface)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--color-highlight)',
-                    color: 'var(--color-primary)',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  {index + 1}
-                </span>
-                <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{item.title}</h2>
-              </div>
-              <p style={{ margin: 0, color: 'var(--color-text)', fontSize: '0.95rem', paddingLeft: '2rem' }}>
-                {item.why}
-              </p>
-            </div>
-          ))}
-
-          {/* Progressive disclosure for steps 4 and 5 */}
-          {remainingItems.length > 0 && (
-            <div>
-              {!showMore ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setShowMore(true)}
-                  style={{ width: '100%', marginTop: '0.5rem' }}
-                >
-                  View more steps ({remainingItems.length}) ↓
-                </button>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-                  {remainingItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '1rem',
-                        backgroundColor: 'var(--color-surface)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-highlight)',
-                            color: 'var(--color-primary)',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          {index + 4}
-                        </span>
-                        <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{item.title}</h2>
-                      </div>
-                      <p style={{ margin: 0, color: 'var(--color-text)', fontSize: '0.95rem', paddingLeft: '2rem' }}>
-                        {item.why}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Action Button to Proceed */}
-        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
-          {card.isAiDisabled ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => onProceed(false)}
-              style={{ width: '100%' }}
-            >
-              Continue to Complaint Draft (Offline only) &rarr;
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => onProceed(true)}
-              style={{ width: '100%' }}
-            >
-              Next: Optional AI Complaint Drafting &rarr;
-            </button>
-          )}
-        </div>
       </div>
 
-      {/* Relevant Emergency & Official Resources */}
+      <div className="form-actions-row" style={{ marginTop: '2rem' }}>
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--color-outline)',
+            margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span
+            className="material-symbols-outlined fill"
+            style={{ fontSize: 14, color: 'var(--color-primary)' }}
+            aria-hidden="true"
+          >
+            lock
+          </span>
+          No data saved to remote servers.
+        </p>
+        {card.isAiDisabled ? (
+          <button type="button" className="btn btn-primary" onClick={() => onProceed(false)}>
+            Continue to Complaint Draft (Offline only)
+            <span className="material-symbols-outlined" aria-hidden="true">
+              arrow_forward
+            </span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => onProceed(true)}
+            aria-label="Next: Optional AI Complaint Drafting"
+          >
+            Continue to Optional Incident Details
+            <span className="material-symbols-outlined" aria-hidden="true">
+              arrow_forward
+            </span>
+          </button>
+        )}
+      </div>
+
       {relevantResources.length > 0 && (
         <div className="card" style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Relevant Reporting Resources</h2>
+          <h2 style={{ fontSize: '1.15rem', marginBottom: '1rem' }}>Relevant Reporting Resources</h2>
           {relevantResources.map((res) => (
             <ResourceCard key={res.id} resource={res} />
           ))}

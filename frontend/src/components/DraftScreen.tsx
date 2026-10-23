@@ -57,14 +57,27 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({
 
   return (
     <div className="draft-screen-container">
-      {/* Fictional Sample Banner */}
+      <div className="banner banner-calm no-print" style={{ marginBottom: '1.25rem' }}>
+        <span className="material-symbols-outlined" aria-hidden="true">
+          volunteer_activism
+        </span>
+        <div>
+          <p style={{ margin: 0, fontWeight: 500 }}>
+            You do not have to figure everything out at once. You are in complete control of this
+            report.
+          </p>
+          <p style={{ margin: '0.25rem 0 0', fontSize: 13, color: 'var(--color-muted)' }}>
+            Nothing leaves your browser without your explicit command.
+          </p>
+        </div>
+      </div>
+
       {isSample && (
         <div className="banner banner-demo no-print" role="alert" style={{ marginBottom: '1.25rem' }}>
           <strong>Sample — not live AI:</strong> This draft was generated from a fictional example scenario to illustrate the complaint preparation format.
         </div>
       )}
 
-      {/* Backend / Guard Notices */}
       {notices.length > 0 && (
         <div className="banner banner-info no-print" role="alert" style={{ marginBottom: '1.25rem' }}>
           <strong>Draft Notices:</strong>
@@ -76,13 +89,19 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({
         </div>
       )}
 
-      {/* Main Printable Draft Card */}
-      <div className="card printable-draft" id="printable-draft-area">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <h1 id="draft-heading" style={{ fontSize: '1.4rem', margin: 0 }}>
-            Official Complaint Preparation Draft
-          </h1>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-muted)' }}>
+      <div className="draft-layout">
+      <div className="card card-elevated printable-draft" id="printable-draft-area">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-border) 40%, transparent)', paddingBottom: '1rem' }}>
+          <div>
+            <div className="draft-doc-meta">
+              <span className="doc-chip">Local Vault Only</span>
+              <span className="doc-chip muted">Ready for Review</span>
+            </div>
+            <h1 id="draft-heading" style={{ fontSize: '1.35rem', margin: '0.35rem 0 0' }}>
+              Official Complaint Preparation Draft
+            </h1>
+          </div>
+          <span className="label-sm" style={{ color: 'var(--color-muted)' }}>
             Editable in-memory draft
           </span>
         </div>
@@ -462,35 +481,56 @@ export const DraftScreen: React.FC<DraftScreenProps> = ({
           </div>
         )}
 
-        {/* Print Footer required by Section 10 */}
         <div className="print-only-footer" style={{ marginTop: '2rem', borderTop: '1px solid #000', paddingTop: '0.5rem', fontSize: '9pt', textAlign: 'center' }}>
           Draft — review and correct before using. Not legal advice.
         </div>
       </div>
 
-      {/* Relevant Resources Cards */}
-      {relevantResources.length > 0 && (
-        <div className="card" style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Reporting & Emergency Contacts</h2>
-          {relevantResources.map((res) => (
-            <ResourceCard key={res.id} resource={res} />
-          ))}
-        </div>
-      )}
+      <aside className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {relevantResources.length > 0 && (
+          <div className="card" style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-border) 40%, transparent)' }}>
+              <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }} aria-hidden="true">
+                verified
+              </span>
+              <h2 style={{ fontSize: '1.05rem', margin: 0 }}>Reporting Channels</h2>
+            </div>
+            {relevantResources.map((res) => (
+              <ResourceCard key={res.id} resource={res} />
+            ))}
+          </div>
+        )}
 
-      {/* Action Buttons: Print / Save a copy */}
-      <div className="card no-print" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '0.75rem' }}>
-          Your copy may stay on this device or in its Downloads folder. SafeSignal can&apos;t control where it goes.
-        </p>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={handlePrint}
-          style={{ width: '100%', maxWidth: '320px', margin: '0 auto' }}
-        >
-          Print / Save a copy
-        </button>
+        <div className="card" style={{ marginBottom: 0, textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-border) 40%, transparent)', textAlign: 'left' }}>
+            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)' }} aria-hidden="true">
+              folder_zip
+            </span>
+            <h2 style={{ fontSize: '1.05rem', margin: 0 }}>Document Controls</h2>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '0.75rem', textAlign: 'left' }}>
+            Your copy may stay on this device or in its Downloads folder. SafeSignal can&apos;t control where it goes.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handlePrint}
+            style={{ width: '100%' }}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              download
+            </span>
+            Print / Save a copy
+          </button>
+        </div>
+
+        <div className="lock-banner">
+          <span className="material-symbols-outlined fill" aria-hidden="true">
+            lock
+          </span>
+          Encrypted locally. Zero server persistence until you export.
+        </div>
+      </aside>
       </div>
     </div>
   )

@@ -67,35 +67,38 @@ describe('SafeSignal End-to-End User Journey (App Component)', () => {
     render(<App />)
 
     // 1. Verify Home screen
-    expect(screen.getByRole('heading', { level: 1, name: /SafeSignal/i })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 1, name: /Clarity when things feel out of control/i })).toBeDefined()
+    expect(screen.getByText('SafeSignal', { selector: '.brand-hero-name' })).toBeDefined()
 
-    // 2. Click "Start Safety Triage"
+    // 2. Start triage (accessible name preserves "Start Safety Triage")
     const startBtn = screen.getByRole('button', { name: /Start Safety Triage/i })
     await act(async () => {
       fireEvent.click(startBtn)
     })
 
     // 3. Triage Screen
-    expect(screen.getByRole('heading', { name: /Immediate Safety Triage/i })).toBeDefined()
-    const seeStepsBtn = screen.getByRole('button', { name: /See my steps/i }) as HTMLButtonElement
-    expect(seeStepsBtn.disabled).toBe(true)
+    expect(screen.getByRole('heading', { name: /Quick Safety Assessment/i })).toBeDefined()
+    const continueBtn = screen.getByRole('button', { name: /Continue to Guidance/i }) as HTMLButtonElement
+    expect(continueBtn.disabled).toBe(true)
 
-    // Answer the 3 questions
-    const radios = screen.getAllByRole('radio')
-    // Q1: money = no
-    await act(async () => { fireEvent.click(radios[1]) })
-    // Q2: age = no
-    await act(async () => { fireEvent.click(radios[4]) })
-    // Q3: danger = no
-    await act(async () => { fireEvent.click(radios[7]) })
-
-    expect(seeStepsBtn.disabled).toBe(false)
+    // Answer the 3 questions by label
     await act(async () => {
-      fireEvent.click(seeStepsBtn)
+      fireEvent.click(screen.getByLabelText(/No — they are threatening something else/i))
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/No \(18 or older\)/i))
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/No physical danger/i))
+    })
+
+    expect(continueBtn.disabled).toBe(false)
+    await act(async () => {
+      fireEvent.click(continueBtn)
     })
 
     // 4. ActionCard Screen
-    expect(screen.getByRole('heading', { name: /Your Immediate Safety Steps/i })).toBeDefined()
+    expect(screen.getByRole('heading', { name: /Immediate Safety Actions/i })).toBeDefined()
     const nextAiBtn = screen.getByRole('button', { name: /Next: Optional AI Complaint Drafting/i })
     await act(async () => {
       fireEvent.click(nextAiBtn)
@@ -139,7 +142,7 @@ describe('SafeSignal End-to-End User Journey (App Component)', () => {
     })
 
     // Returned to Home
-    expect(screen.getByRole('heading', { level: 1, name: /SafeSignal/i })).toBeDefined()
+    expect(screen.getByRole('heading', { level: 1, name: /Clarity when things feel out of control/i })).toBeDefined()
   })
 
   it('opens and closes Urgent Help modal cleanly', async () => {
@@ -151,8 +154,8 @@ describe('SafeSignal End-to-End User Journey (App Component)', () => {
     })
 
     expect(screen.getByRole('heading', { name: /Immediate & Urgent Help/i })).toBeDefined()
-    expect(screen.getByText(/112 — Immediate Physical Danger/i)).toBeDefined()
-    expect(screen.getByText(/1098 — Childline/i)).toBeDefined()
+    expect(screen.getByText(/112 .* Immediate Physical Danger/i)).toBeDefined()
+    expect(screen.getByText(/1098 .* Childline/i)).toBeDefined()
 
     const closeBtn = screen.getByRole('button', { name: /Close Urgent Help/i })
     await act(async () => {

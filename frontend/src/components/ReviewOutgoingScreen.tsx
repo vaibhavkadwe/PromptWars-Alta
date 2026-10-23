@@ -33,7 +33,16 @@ export const ReviewOutgoingScreen: React.FC<ReviewOutgoingScreenProps> = ({
   const tokenCount = Object.keys(combinedMap).length
 
   return (
-    <div className="card">
+    <div>
+      <div className="banner banner-calm" style={{ marginBottom: '1.25rem' }}>
+        <span className="material-symbols-outlined fill" aria-hidden="true">
+          verified_user
+        </span>
+        <p style={{ margin: 0, fontWeight: 500, fontSize: 13 }}>
+          Review the exact text that will leave this device. Nothing is sent until you confirm.
+        </p>
+      </div>
+    <div className="card card-elevated">
       <h1 id="review-heading" style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>
         Review Outgoing Text
       </h1>
@@ -151,6 +160,7 @@ export const ReviewOutgoingScreen: React.FC<ReviewOutgoingScreenProps> = ({
       >
         {isSubmitting ? 'Sending to AI service...' : 'Send to AI service'}
       </button>
+    </div>
     </div>
   )
 }
