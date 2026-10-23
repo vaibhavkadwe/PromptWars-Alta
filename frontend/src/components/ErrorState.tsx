@@ -1,114 +1,90 @@
-import React, { useState } from 'react'
-import { GENERAL_SAFETY_CHECKLIST } from '../lib/generalChecklist'
+import React from 'react'
 
 interface ErrorStateProps {
   error: { code: string; message: string; retryAfter?: number } | null
   onRetry: () => void
   onViewSample: () => void
+  onDraftOffline?: () => void
 }
 
-export const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, onViewSample }) => {
-  const [showChecklist, setShowChecklist] = useState(false)
-
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  error,
+  onRetry,
+  onViewSample,
+  onDraftOffline,
+}) => {
   const getHumanExplanation = () => {
     if (!error) return 'An unexpected error occurred.'
+    if (error.code === 'MINOR_SIGNAL') {
+      return 'SafeSignal detected words indicating this situation may involve a minor. AI processing is disabled for minor safety. Please use our safe offline complaint draft.'
+    }
+    if (error.code === 'ADULT_NOT_CONFIRMED') {
+      return 'You must confirm you are 18 or older to use the optional AI drafting tool.'
+    }
+    if (error.code === 'CONSENT_REQUIRED') {
+      return 'Explicit consent for AI processing is required before text can be sent.'
+    }
     if (error.code === 'RATE_LIMIT_EXCEEDED') {
       return `Too many requests were sent in a short period. Please wait ${
         error.retryAfter || 30
       } seconds before trying again.`
     }
-    if (error.code === 'DAILY_CAP_EXCEEDED') {
-      return 'The prototype daily analysis limit has been reached. You can view the fictional sample or use the general checklist below.'
-    }
     if (error.code === 'AI_NOT_CONFIGURED') {
-      return 'The AI engine API key is not configured on this server. You can view the sample report or use the general safety checklist.'
+      return 'The AI engine API key is not configured on this server. You can view the sample draft or draft your complaint offline.'
     }
     if (error.code === 'AI_UNAVAILABLE') {
-      return 'The AI engine is temporarily busy or unreachable. You can retry in a moment or view the safety checklist.'
+      return 'The AI service is temporarily unavailable or timed out. You can retry or prepare your draft offline.'
     }
     if (error.code === 'AI_BAD_OUTPUT') {
-      return 'The AI engine output failed schema or safety validation. Please retry or adjust your text description.'
+      return 'The AI response could not be safely validated against our strict safety rules. You can retry or write the draft offline.'
     }
     if (error.code === 'PAYLOAD_TOO_LARGE') {
-      return 'Your input exceeded the 64 KB limit. Please reduce the length of your description or evidence text.'
+      return 'Your input exceeded the 64 KB limit. Please reduce the length of your text.'
     }
     return error.message || 'We could not complete the automated analysis.'
   }
 
+  const isMinorSignal = error?.code === 'MINOR_SIGNAL'
+
   return (
     <div className="card">
       <div
-        className="banner banner-demo"
-        style={{
-          backgroundColor: 'var(--color-urgent-bg)',
-          borderColor: 'var(--color-urgent-border)',
-          color: 'var(--color-urgent-text)',
-        }}
+        className="banner banner-urgent"
         role="alert"
+        style={{ marginBottom: '1.5rem' }}
       >
-        <h2 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0' }}>Analysis Could Not Be Completed</h2>
+        <h2 style={{ fontSize: '1.2rem', margin: '0 0 0.4rem 0' }}>
+          {isMinorSignal ? 'Minor Safety Protection' : 'Analysis Could Not Be Completed'}
+        </h2>
         <p style={{ margin: 0, fontSize: '0.95rem' }}>{getHumanExplanation()}</p>
+        {error?.code && (
+          <div style={{ fontSize: '0.8rem', marginTop: '0.4rem', opacity: 0.8 }}>
+            Error code: <code>{error.code}</code>
+          </div>
+        )}
       </div>
 
       <p style={{ color: 'var(--color-muted)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-        You can retry, inspect a sample report to see how SafeSignal works, or use our verified offline
-        safety checklist immediately.
+        You do not need AI to prepare an official report. You can write your complaint draft offline on your own device, explore our fictional sample, or retry.
       </p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <button type="button" className="btn btn-primary" onClick={onRetry}>
-          Retry Analysis
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setShowChecklist(!showChecklist)}
-        >
-          {showChecklist ? 'Hide general checklist' : 'Use general safety checklist'}
-        </button>
+        {!isMinorSignal && (
+          <button type="button" className="btn btn-primary" onClick={onRetry}>
+            Retry Analysis
+          </button>
+        )}
+
+        {onDraftOffline && (
+          <button type="button" className="btn btn-primary" onClick={onDraftOffline}>
+            Draft offline without AI
+          </button>
+        )}
+
         <button type="button" className="btn btn-secondary" onClick={onViewSample}>
-          View fictional sample
+          View fictional sample draft
         </button>
       </div>
-
-      {showChecklist && (
-        <div
-          style={{
-            borderTop: '1px solid var(--color-border)',
-            paddingTop: '1.25rem',
-            marginTop: '1rem',
-          }}
-        >
-          <div
-            className="banner banner-sample"
-            style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '1rem' }}
-          >
-            General guidance &mdash; not personalised, not AI-generated
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {GENERAL_SAFETY_CHECKLIST.map((section, idx) => (
-              <div key={idx} className="card" style={{ padding: '1rem', margin: 0 }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>
-                  {section.title}
-                </h3>
-                <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {section.items.map((item, i) => (
-                    <li key={i} style={{ fontSize: '0.95rem' }}>
-                      <strong>{item.text}</strong>
-                      {item.details && (
-                        <div style={{ color: 'var(--color-muted)', fontSize: '0.88rem', marginTop: '0.15rem' }}>
-                          {item.details}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

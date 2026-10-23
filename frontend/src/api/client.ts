@@ -2,7 +2,7 @@
  * API client for SafeSignal backend.
  */
 
-import { AnalyzeRequest, AnalyzeResponse, ApiError, HealthResponse, Resource } from '../types/report'
+import { AnalyzeRequest, AnalyzeResponse, ApiError, HealthResponse } from '../types/report'
 
 export class SafeSignalApiError extends Error {
   code: string
@@ -58,11 +58,6 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function fetchHealth(): Promise<HealthResponse> {
   const res = await fetch('/api/health')
   return handleResponse<HealthResponse>(res)
-}
-
-export async function fetchResources(): Promise<Resource[]> {
-  const res = await fetch('/api/resources')
-  return handleResponse<Resource[]>(res)
 }
 
 export async function fetchSampleReport(): Promise<AnalyzeResponse> {

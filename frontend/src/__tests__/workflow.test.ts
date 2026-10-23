@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { generateExportText } from '../lib/exportText'
 import { validateTxtFile } from '../lib/validateTxtFile'
 import { INITIAL_STATE, workflowReducer } from '../state/workflow'
-import {
-  AnalyzeResponse,
-  ReviewedAction,
-  ReviewedDetail,
-  ReviewedEvidence,
-  ReviewedTimeline,
-} from '../types/report'
 
 describe('validateTxtFile', () => {
   it('accepts valid small UTF-8 txt file', async () => {
@@ -50,151 +42,93 @@ describe('validateTxtFile', () => {
   })
 })
 
-describe('exportText', () => {
-  const mockResponse: AnalyzeResponse = {
-    request_id: 'test-req-123',
-    source: 'sample',
-    model: null,
-    paid_tier: false,
-    generated_at: '2026-10-23T10:00:00Z',
-    report: {
-      summary: 'Extortion demand received via dating app.',
-      categories: [
-        {
-          id: 'THREAT_TO_SHARE_IMAGES',
-          likelihood: 'stated',
-          rationale: 'Threatened to broadcast video.',
-        },
-      ],
-      extracted_details: [],
-      timeline: [],
-      missing_information: [],
-      risk: {
-        level: 'elevated',
-        factors: ['impending deadline'],
-        physical_danger_mentioned: false,
-        self_harm_mentioned: false,
-        possible_minor: false,
-      },
-      actions: [],
-      evidence_items: [],
-      limitations: ['Not legal advice.'],
-    },
-    safety: { physical_danger: false, self_harm: false, possible_minor: false },
-    resources: [],
-  }
-
-  const reviewedDetails: ReviewedDetail[] = [
-    {
-      id: 'd1',
-      original: {
-        kind: 'username',
-        label: 'Sender Handle',
-        value: 'rhea_travels_22',
-        source: 'user_description',
-        basis: 'stated',
-      },
-      include: true,
-      confirmed: true,
-    },
-    {
-      id: 'd2',
-      original: {
-        kind: 'money_demand',
-        label: 'Demanded Amount',
-        value: '15000',
-        source: 'user_description',
-        basis: 'inferred',
-      },
-      include: true,
-      confirmed: false,
-    },
-    {
-      id: 'd3',
-      original: {
-        kind: 'platform',
-        label: 'Irrelevant Platform',
-        value: 'random_app',
-        source: 'user_description',
-        basis: 'inferred',
-      },
-      include: false, // Removed by user
-      confirmed: false,
-    },
-  ]
-
-  const reviewedTimeline: ReviewedTimeline[] = []
-  const reviewedEvidence: ReviewedEvidence[] = []
-  const reviewedActions: ReviewedAction[] = []
-
-  it('excludes removed items and labels confirmed vs AI items', () => {
-    const text = generateExportText(
-      mockResponse,
-      reviewedDetails,
-      reviewedTimeline,
-      reviewedEvidence,
-      reviewedActions,
-      {
-        includeSummary: true,
-        includeCategories: true,
-        includeDetails: true,
-        includeTimeline: true,
-        includeEvidence: true,
-        includeActions: true,
-        includeContacts: true,
-        includeOriginalDescription: false, // Default is false
-      },
-      'My secret raw description text that should be excluded by default',
-    )
-
-    // Confirmed detail has confirmed tag
-    expect(text).toContain('Sender Handle: rhea_travels_22 [Confirmed by you]')
-    // Unconfirmed detail has AI tag
-    expect(text).toContain('Demanded Amount: 15000 [AI-extracted, unchecked]')
-    // Removed item must NEVER appear
-    expect(text).not.toContain('random_app')
-    expect(text).not.toContain('Irrelevant Platform')
-    // Original description excluded by default
-    expect(text).not.toContain('My secret raw description text')
+describe('workflowReducer & Step Stack Navigation', () => {
+  it('initializes with home step and stepStack ["home"]', () => {
+    expect(INITIAL_STATE.step).toBe('home')
+    expect(INITIAL_STATE.stepStack).toEqual(['home'])
   })
-})
 
-describe('workflowReducer RESET', () => {
-  it('clears all incident draft, response, and review state back to initial state', () => {
-    const stateWithData = {
-      ...INITIAL_STATE,
-      step: 'report' as const,
-      draft: {
-        ...INITIAL_STATE.draft,
-        description: 'Sensitive user threat story',
-        evidence_text: 'Secret payment info',
-      },
-      response: {} as AnalyzeResponse,
-      reviewedDetails: [
-        {
-          id: '1',
-          original: {
-            kind: 'username' as const,
-            label: 'Test',
-            value: 'val',
-            source: 'user_description' as const,
-            basis: 'stated' as const,
-          },
-          include: true,
-          confirmed: true,
-        },
-      ],
-      health: { ai_configured: true, paid_tier: true },
-    }
+  it('pushes steps onto stack and goes back to previous step without data loss', () => {
+    // 1. Home -> Triage
+    let state = workflowReducer(INITIAL_STATE, { type: 'GO_TO_STEP', payload: 'triage' })
+    expect(state.step).toBe('triage')
+    expect(state.stepStack).toEqual(['home', 'triage'])
 
-    const resetState = workflowReducer(stateWithData, { type: 'RESET' })
+    // 2. Set triage answers
+    state = workflowReducer(state, {
+      type: 'SET_TRIAGE_ANSWER',
+      payload: { field: 'money', value: 'yes' },
+    })
+    state = workflowReducer(state, {
+      type: 'SET_TRIAGE_ANSWER',
+      payload: { field: 'age', value: 'no' },
+    })
+    state = workflowReducer(state, {
+      type: 'SET_TRIAGE_ANSWER',
+      payload: { field: 'danger', value: 'no' },
+    })
 
-    expect(resetState.step).toBe('home')
-    expect(resetState.draft.description).toBe('')
-    expect(resetState.draft.evidence_text).toBe('')
-    expect(resetState.response).toBeNull()
-    expect(resetState.reviewedDetails).toEqual([])
-    // Preserves health info
-    expect(resetState.health?.ai_configured).toBe(true)
+    // 3. Submit triage -> actionCard
+    state = workflowReducer(state, { type: 'SUBMIT_TRIAGE' })
+    expect(state.step).toBe('actionCard')
+    expect(state.actionCard).toBeDefined()
+    expect(state.stepStack).toEqual(['home', 'triage', 'actionCard'])
+
+    // 4. ActionCard -> aiIntro
+    state = workflowReducer(state, { type: 'GO_TO_STEP', payload: 'aiIntro' })
+    expect(state.step).toBe('aiIntro')
+    expect(state.stepStack).toEqual(['home', 'triage', 'actionCard', 'aiIntro'])
+
+    // 5. aiIntro -> input
+    state = workflowReducer(state, { type: 'CHOOSE_AI_PATH', payload: true })
+    expect(state.step).toBe('input')
+    expect(state.useAi).toBe(true)
+
+    // 6. Enter input text
+    state = workflowReducer(state, {
+      type: 'SET_INPUT_DATA',
+      payload: { description: 'A detailed extortion complaint with more than 10 characters.' },
+    })
+    expect(state.inputData.description).toContain('detailed extortion complaint')
+
+    // 7. Test GO_BACK: Back should return to aiIntro, keeping inputData intact!
+    state = workflowReducer(state, { type: 'GO_BACK' })
+    expect(state.step).toBe('aiIntro')
+    expect(state.inputData.description).toContain('detailed extortion complaint')
+
+    // 8. Back again -> actionCard
+    state = workflowReducer(state, { type: 'GO_BACK' })
+    expect(state.step).toBe('actionCard')
+    expect(state.triageAnswers.money).toBe('yes')
+  })
+
+  it('cancel analysis aborts and returns to reviewOutgoing or input', () => {
+    const controller = new AbortController()
+    let state = workflowReducer(INITIAL_STATE, { type: 'GO_TO_STEP', payload: 'input' })
+    state = workflowReducer(state, { type: 'START_ANALYSIS', payload: controller })
+    expect(state.step).toBe('analyzing')
+    expect(state.isSubmitting).toBe(true)
+
+    state = workflowReducer(state, { type: 'CANCEL_ANALYSIS' })
+    expect(state.isSubmitting).toBe(false)
+    expect(state.abortController).toBeNull()
+    expect(controller.signal.aborted).toBe(true)
+    expect(['input', 'reviewOutgoing']).toContain(state.step)
+  })
+
+  it('reset clears all in-memory state back to initial state', () => {
+    let state = workflowReducer(INITIAL_STATE, { type: 'GO_TO_STEP', payload: 'input' })
+    state = workflowReducer(state, {
+      type: 'SET_INPUT_DATA',
+      payload: { description: 'Confidential text that must be cleared.' },
+    })
+    state = workflowReducer(state, { type: 'RESET' })
+
+    expect(state.step).toBe('home')
+    expect(state.stepStack).toEqual(['home'])
+    expect(state.inputData.description).toBe('')
+    expect(state.triageAnswers.money).toBeNull()
+    expect(state.actionCard).toBeNull()
+    expect(state.draft).toBeNull()
   })
 })

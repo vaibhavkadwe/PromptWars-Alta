@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { getGeminiTermsNotice, PRIVACY_COPY } from '../content/privacyCopy'
 
 interface PrivacyNoticeProps {
   isOpen: boolean
@@ -41,10 +42,11 @@ export const PrivacyNotice: React.FC<PrivacyNoticeProps> = ({ isOpen, onClose, p
         ref={modalRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '580px' }}
       >
         <div className="modal-header">
-          <h2 id="privacy-notice-title" style={{ margin: 0 }}>
-            Privacy, Limits & Security
+          <h2 id="privacy-notice-title" style={{ margin: 0, fontSize: '1.25rem' }}>
+            Privacy Architecture & Limits
           </h2>
           <button
             type="button"
@@ -52,66 +54,47 @@ export const PrivacyNotice: React.FC<PrivacyNoticeProps> = ({ isOpen, onClose, p
             onClick={onClose}
             aria-label="Close privacy notice"
           >
-            Close (Esc)
+            ✕ Close
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.95rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.92rem', padding: '1rem 0' }}>
+          {/* Tier-dependent Gemini terms */}
+          <div className="banner banner-info" style={{ margin: 0, padding: '0.75rem 1rem' }}>
+            <strong>Google Gemini Terms ({paidTier ? 'Paid Tier' : 'Free Tier'}):</strong>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem' }}>
+              {getGeminiTermsNotice(paidTier)}
+            </p>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '0.4rem' }}>
+              Source: <a href={PRIVACY_COPY.source} target="_blank" rel="noopener noreferrer">{PRIVACY_COPY.source}</a> &bull; Last checked {PRIVACY_COPY.lastChecked}
+            </div>
+          </div>
+
           <div>
-            <h3>1. Complete Ephemerality</h3>
-            <p>
-              SafeSignal operates with zero persistence. There are no user accounts, no databases,
-              and no browser cookies or local storage for incident reports. When you close the tab or
-              click &ldquo;Start a new report&rdquo;, all data held in memory is erased.
+            <strong style={{ display: 'block', marginBottom: '0.2rem' }}>1. No Media or Image Uploads</strong>
+            <p style={{ margin: 0, color: 'var(--color-muted)' }}>
+              SafeSignal strictly never requests, accepts, uploads, or stores sexual or intimate media. Local OCR runs entirely in your browser using WebAssembly; image files never leave your device and are immediately dropped from memory.
             </p>
           </div>
 
           <div>
-            <h3>2. Text-Only Analysis (No Media Accepted)</h3>
-            <p>
-              We never request, accept, or process photos, videos, or screenshots. Only typed or pasted
-              text descriptions are analyzed. Never share nude or intimate media with SafeSignal.
+            <strong style={{ display: 'block', marginBottom: '0.2rem' }}>2. Pure In-Memory Browser Execution</strong>
+            <p style={{ margin: 0, color: 'var(--color-muted)' }}>
+              Incident text, triage choices, and drafts exist only in volatile browser memory while this tab is open. We do not use localStorage, sessionStorage, cookies, or IndexedDB for incident records.
             </p>
           </div>
 
           <div>
-            <h3>3. AI Processing & Google Data Terms</h3>
-            <p>
-              When you submit a description, it is transmitted securely over HTTPS directly to the server,
-              which contacts Google Gemini API to structure your report.
-            </p>
-            {paidTier ? (
-              <p>
-                <strong>Tier Status: Paid Commercial Tier.</strong> Under Google&apos;s commercial terms,
-                customer data is not used to train Google models.
-              </p>
-            ) : (
-              <div className="banner banner-demo" style={{ margin: '0.5rem 0' }}>
-                <strong>Tier Status: Free Prototype Key.</strong> Under Google&apos;s standard free-tier
-                terms, submitted text may be logged and reviewed by human reviewers to improve products.
-                <strong>
-                  {' '}
-                  Please do not enter real names, phone numbers, or private details into this prototype.
-                </strong>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h3>4. Zero Incident Logging</h3>
-            <p>
-              Our backend server logs only coarse operational metadata: request ID, response status,
-              latency in milliseconds, and input length buckets (e.g. &ldquo;&lt;500 chars&rdquo;).
-              Incident descriptions, evidence excerpts, prompts, and AI outputs are strictly forbidden
-              from being logged.
+            <strong style={{ display: 'block', marginBottom: '0.2rem' }}>3. Metadata-Only Server Logs</strong>
+            <p style={{ margin: 0, color: 'var(--color-muted)' }}>
+              Our backend server logs only request identifiers, coarse character length buckets, latency, and status codes. User descriptions, evidence, prompts, and model outputs are never written to server logs under any circumstances.
             </p>
           </div>
 
           <div>
-            <h3>5. Not Legal or Police Advice</h3>
-            <p>
-              SafeSignal is an educational first-response tool to organize your information. It cannot
-              authenticate files, trace perpetrators, or guarantee prosecution or content removal.
+            <strong style={{ display: 'block', marginBottom: '0.2rem' }}>4. Not Law Enforcement or Legal Counsel</strong>
+            <p style={{ margin: 0, color: 'var(--color-muted)' }}>
+              SafeSignal is a first-response triage tool to help organize an editable draft. It cannot investigate suspects, verify authenticity, or file official complaints on your behalf.
             </p>
           </div>
         </div>

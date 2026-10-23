@@ -1,22 +1,12 @@
 import React, { useEffect, useRef } from 'react'
-import { Resource } from '../types/report'
 
 interface UrgentHelpProps {
   isOpen: boolean
   onClose: () => void
-  resources?: Resource[]
 }
 
-const STATIC_FALLBACK_RESOURCES = [
-  { id: 'ERSS_112', title: 'Emergency Response (police, fire, ambulance)', value: '112', kind: 'phone' },
-  { id: 'CHILDLINE_1098', title: 'Childline (child helpline)', value: '1098', kind: 'phone' },
-  { id: 'HELPLINE_1930', title: 'National Cyber Crime Helpline', value: '1930', kind: 'phone' },
-  { id: 'NCRP', title: 'National Cyber Crime Reporting Portal', value: 'https://cybercrime.gov.in/', kind: 'link' },
-]
-
-export const UrgentHelp: React.FC<UrgentHelpProps> = ({ isOpen, onClose, resources }) => {
+export const UrgentHelp: React.FC<UrgentHelpProps> = ({ isOpen, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null)
-  const displayResources = resources && resources.length > 0 ? resources : STATIC_FALLBACK_RESOURCES
 
   useEffect(() => {
     if (!isOpen) return
@@ -50,79 +40,80 @@ export const UrgentHelp: React.FC<UrgentHelpProps> = ({ isOpen, onClose, resourc
         ref={modalRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '540px' }}
       >
         <div className="modal-header">
-          <h2 id="urgent-help-title" style={{ color: 'var(--color-urgent-text)', margin: 0 }}>
-            Emergency & Urgent Help
+          <h2 id="urgent-help-title" style={{ color: 'var(--color-urgent-text)', margin: 0, fontSize: '1.25rem' }}>
+            Immediate & Urgent Help
           </h2>
           <button
             type="button"
             className="btn btn-sm btn-secondary"
             onClick={onClose}
-            aria-label="Close urgent help sheet"
+            aria-label="Close Urgent Help"
           >
-            Close (Esc)
+            ✕ Close
           </button>
         </div>
 
-        <div className="urgent-panel" style={{ marginTop: '0.5rem' }}>
-          <div className="urgent-panel-header">
-            <span>Are you in immediate physical danger?</span>
-          </div>
-          <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>
-            If someone is threatening to come to your home, school, or physically hurt you, call
-            emergency services immediately.
-          </p>
-          <a href="tel:112" className="urgent-dial-btn" aria-label="Call 112 emergency services">
-            Call 112 (Emergency Police / Medical)
-          </a>
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h3>Immediate Safe Rules</h3>
-          <ul style={{ paddingLeft: '1.25rem', marginTop: '0.4rem', fontSize: '0.95rem' }}>
-            <li>
-              <strong>Do not pay:</strong> Sending money does not guarantee deletion and usually leads
-              to escalating demands.
-            </li>
-            <li>
-              <strong>Do not send more images:</strong> Complying with demands gives perpetrators more leverage.
-            </li>
-            <li>
-              <strong>Do not delete chats yet:</strong> Preserve the message logs and profile identifiers
-              first before blocking.
-            </li>
-            <li>
-              <strong>Talk to a trusted person:</strong> You do not have to handle this in isolation.
-              If safe, tell a trusted adult or family member.
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h3>Verified Helplines &amp; Portals (India)</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-            {displayResources.map((res) => (
-              <div key={res.id} className="card" style={{ padding: '0.85rem', margin: 0 }}>
-                <strong>{res.title}</strong>
-                <div style={{ margin: '0.4rem 0 0 0' }}>
-                  {res.kind === 'phone' ? (
-                    <a href={`tel:${res.value}`} className="btn btn-sm btn-primary">
-                      Call {res.value}
-                    </a>
-                  ) : (
-                    <a
-                      href={res.value}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-secondary"
-                    >
-                      Visit {res.title} &rarr;
-                    </a>
-                  )}
+        <div className="modal-body" style={{ padding: '1rem 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* 112 for immediate danger */}
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-urgent-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-urgent-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: 'var(--color-urgent-text)', display: 'block' }}>112 — Immediate Physical Danger</strong>
+                  <span style={{ fontSize: '0.85rem' }}>Call right now if anyone has threatened physical harm or you feel unsafe in your location.</span>
                 </div>
+                <a href="tel:112" className="btn btn-sm btn-urgent" style={{ marginLeft: '0.5rem', whiteSpace: 'nowrap' }}>
+                  Call 112
+                </a>
               </div>
-            ))}
+            </div>
+
+            {/* Childline 1098 */}
+            <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-highlight)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: 'var(--color-primary-hover)', display: 'block' }}>1098 — Childline (Under 18)</strong>
+                  <span style={{ fontSize: '0.85rem' }}>Free 24-hour helpline for children and teens in need of care, advice, and protection.</span>
+                </div>
+                <a href="tel:1098" className="btn btn-sm btn-primary" style={{ marginLeft: '0.5rem', whiteSpace: 'nowrap' }}>
+                  Call 1098
+                </a>
+              </div>
+            </div>
+
+            {/* Key safety principles */}
+            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.9rem', color: 'var(--color-text)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <li>
+                <strong>Do not pay or send more:</strong> Paying demands does not guarantee threats will stop and usually leads to more demands.
+              </li>
+              <li>
+                <strong>Tell a trusted person if safe:</strong> Reach out to a relative, counsellor, or teacher you feel comfortable confiding in.
+              </li>
+              <li>
+                <strong>Preserve records:</strong> Keep message screenshots showing handles and times before blocking or reporting.
+              </li>
+            </ul>
+
+            {/* National Cyber Crime Reporting Portal link */}
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+              <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                National Cyber Crime Reporting Portal
+              </strong>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-muted)', margin: '0 0 0.5rem 0' }}>
+                Government of India portal to report cybercrime and image abuse online.
+              </p>
+              <a
+                href="https://cybercrime.gov.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-secondary"
+              >
+                Open cybercrime.gov.in &rarr;
+              </a>
+            </div>
           </div>
         </div>
       </div>
